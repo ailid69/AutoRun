@@ -1,6 +1,11 @@
 <?php 
+<<<<<<< HEAD
 TEST
 	require_once 'config.php'; 
+=======
+	require_once 'config.php'; 
+ 
+>>>>>>> 6af3fb9a4cfe8c2aa0f3bd96e8476b177acc019e
 ?> 
 
 <!doctype html>
@@ -72,4 +77,8 @@ TEST
 </div>
 
 </body>
+<<<<<<< HEAD
 </html>
+=======
+</html>
+>>>>>>> 6af3fb9a4cfe8c2aa0f3bd96e8476b177acc019e
