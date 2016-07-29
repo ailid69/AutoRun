@@ -1,4 +1,5 @@
 <?php 
+print "LES REQUIRES";
 	require_once 'config.php'; 
 ?> 
 
