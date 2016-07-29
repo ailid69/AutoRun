@@ -3,7 +3,7 @@
     require_once './../config.php';
     if(empty($_SESSION['user'])) 
     {
-        header("Location: index.php?msg=4");
+        header("Location: /index.php?msg=4");
         die("Redirecting to index.php"); 
     }
 	else 
