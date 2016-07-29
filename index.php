@@ -1,4 +1,5 @@
 <?php 
+TEST
 	require_once 'config.php'; 
 ?> 
 
