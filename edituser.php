@@ -1,6 +1,12 @@
 <?php
     require_once 'config.php';
    
+	/*-------------------------------------------------------------------------------------------------
+		Redirige vers la page d'accueil si l'utilisateur n'est pas connecté 
+		ou si l'utilisateur est connecté en tant que simple utilisateur 
+		et qu'il demande d'éditer un autre tilisateur que lui même
+	-------------------------------------------------------------------------------------------------*/		
+  
 	if(
 		empty($_SESSION['user']) ||
 		$_SESSION['user']['isadmin']!=1 && (
@@ -63,8 +69,8 @@
 			$errmsg = 'Il y a eu un problême avec la base de données. <BR><code>'.$ex->getMessage().'</code>';
 		} 
 	}
-	else if($_POST['userid']){
-		if ($_POST['isadmin']){
+	else if(!empty($_POST['userid'])){
+		if (!empty($_POST['isadmin'])){
 			$ismyuseradmin = 1;
 		}
 		else{
@@ -110,7 +116,7 @@
   
   <div class="panel-body"> 
   <?php 
-  if ($_POST['userid']){
+  if (!empty($_POST['userid'])){
 		echo 
 			'
 			<div class="alert alert-info" role="alert">

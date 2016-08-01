@@ -14,7 +14,6 @@ if (!empty($_GET['email'])){
 	else{
 		$query = "SELECT username FROM users WHERE email = {$email};";
 	}
-	printf($query);
 	try{ 
             $stmt = $db->prepare($query); 
             $stmt->execute($query_params); 
@@ -22,16 +21,13 @@ if (!empty($_GET['email'])){
         } 
         catch(PDOException $ex){ die("Failed to run query: " . $ex->getMessage()); } 
         
-   printf("rows returned:" . $result);
     if($result == 0)
     {
         header("HTTP/1.1 200 OK");
-		printf("email free");
     }
     else
     {
         header("HTTP/1.1 400 ALREADY USED");
-		printf("email already used!");
     }
 }
 	else

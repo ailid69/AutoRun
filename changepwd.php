@@ -60,7 +60,7 @@
         catch(PDOException $ex){ 
 		die("Failed to run query: " . $ex->getMessage()); } 
 
-	if($_POST['newpassword']){
+	if(!empty($_POST['newpassword'])){
 		if ($_SESSION['user']['isadmin']==0){
 		// check current password
 			$pwd_ok = 0;

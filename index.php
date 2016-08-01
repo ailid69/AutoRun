@@ -24,7 +24,12 @@
 <?php include('myNavBar.php'); ?>
 
 <div class="container hero-unit">
-    <h1>AutoRun</h1>
+	<div class="panel panel-default">
+		<div class="panel-heading">
+			<h1>Bienvenue dans l'application AutoRun</h1>
+		</div>
+		<div class="panel-body">
+ 
  <?php 
  if (isset($_GET['msg'])){
 	 $msg = displayErrorMessage($_GET['msg']);
@@ -37,7 +42,14 @@
  }
  
  if (isset($_SESSION['user'])){
-	echo '</div></body></html>';
+	echo '	
+		<h4>Veuillez utiliser la barre de navigation pour accéder aux différentes fonctions de l\'application</h4>
+		<p>Vous pourrez nottament charger de nouveaux packages et suivre l\'évolution du traitement de ces packages depuis la phase de chargement jusqu\'à l\'execution.</p>
+	</div>
+	</div>
+	</div>
+	</body>
+	</html>';
 	die;
 }
  ?>   

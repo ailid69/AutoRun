@@ -1,4 +1,12 @@
 <?php
+
+/*-------------------------------------------------------------------------------------------------	
+	Affiche une barre de navigation - Ce fichier doit être inclu dans chacune des pages de l'application
+	La liste des actions disponibles est dynamique selon si : 
+	L'utilisateur est connecté ou pas
+	L'utilisatuer est connecté en tant qu'administrateur ou simple utilisateur
+-------------------------------------------------------------------------------------------------*/
+
     require_once 'config.php';
 	
 	/*print_r($_SESSION);
@@ -15,27 +23,29 @@
 <style type="text/css">
   </style>
 <nav class="navbar navbar-inverse navbar-fixed-top ">
-<!-- nav class="navbar navbar-inverse"-->
+
   <div class="container-fluid">
-    <!-- Brand and toggle get grouped for better mobile display -->
+ 
     <div class="navbar-header">
-      <!--button type="button" class="navbar-toggle collapsed navbar-fixed-top" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false"-->
 	<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">      
 	  <span class="sr-only">Toggle navigation</span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand">AutoRun</a>
+      <a class="navbar-brand">AutoRun - Une application pour automatiser le passage de script</a>
     </div>
-
-    <!-- Collect the nav links, forms, and other content for toggling -->
     
 	<div class="collapse navbar-collapse navbar-fixed-top" id="bs-example-navbar-collapse-1">
-	<!-- div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1"-->
 
       <ul class="nav navbar-nav navbar-right">
         <?php
+		
+		/*-------------------------------------------------------------------------------------------------
+			Si l'utilisateur est connecté et qu'il est administateur
+			On affiche une liste déroulante contenant l'ensemble des actions réservées aux administrateurs 
+		-------------------------------------------------------------------------------------------------*/
+		
 		 if(isset($_SESSION['user']['isadmin']) && ($_SESSION['user']['isadmin']))
 		 {
 		echo '		 
@@ -51,6 +61,12 @@
         </li>
 		';
 		}
+		
+		/*-------------------------------------------------------------------------------------------------
+			Si l'utilisateur est connecté (qu'il soit administrateur ou simple utilisateur)
+			On affiche une liste déroulante contenant l'ensemble des actions réservées aux utilisateurs 
+		-------------------------------------------------------------------------------------------------*/
+			
 		if( isset($_SESSION['user']))
 		 {
 		echo '
@@ -74,7 +90,12 @@
 		</li>
 		';
 		 }
-	
+		 
+		/*-------------------------------------------------------------------------------------------------
+			Si l'utilisateur n'est pas connecté
+			On affiche une liste déroulante contenant le formulaire de connection 
+		-------------------------------------------------------------------------------------------------*/
+		
 		if(empty($_SESSION['user'])) 
 		{
 		echo '
