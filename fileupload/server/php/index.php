@@ -1,7 +1,21 @@
 <?php
+
+/* -----------------------------------------------------------
+	Appellé à chaque action de la page fileupload
+	Renvoit une réponse sous la forme d'un fichier json 
+
+	Exemple : {"files":[{"name":"13ValidARCHIVE1.zip","size":952,"type":"application\/x-zip-compressed","uploaded_by":"15","info":"Le package est bien t\u00e9l\u00e9charg\u00e9, en attente de contr\u00f4le","package":"ABCDEFGjk","server":"PCYYY589","user":"oracle"}]}
+
+	Si file->info existe on affichera un label Success avec le contenu de file->info ainsi que des inforamtions relatives au package chargé
+	So file -> error existe on afficher un label Error avec le contenu de file->error
+----------------------------------------------------------- */
+
 require_once ('./../../../config.php');
 
 
+/* -----------------------------------------------------------
+	Initialisation des options du gestionnaire de téléchargement
+----------------------------------------------------------- */
 $options = array(
     'delete_type' => 'POST',
     'db_host' => HOST,
@@ -35,7 +49,7 @@ class UploadHandler
         'min_height' => 'Image requires a minimum height',
         'abort' => 'Le téléchargement du fichier a été annulé',
         'image_resize' => 'Failed to resize image',
-		'name_used' => 'Ce package a déjà été téléchargé',
+		'name_used' => 'Ce fichier a déjà été téléchargé',
 		'movetorepo' => 'Ce package n\'a pas pu être copié sur le répertoire de dépôt'
     );
 
@@ -352,17 +366,17 @@ class UploadHandler
     }
 
     protected function get_file_objects($iteration_method = 'get_file_object') {
-		/* Permet de lister les fichiers visibles lors de la première connexion à la page de chargement de fichiers
+		/* -------------------------------------------------------------------------
+		Permet de lister les fichiers visibles lors de la première connexion à la page de chargement de fichiers
 		Dans notre cas, on en fait rien
-		Si l'on souhaite afficher la liste des fichiers basées sur le contenu de la base de données ou la liste des fichiers disponibles dans le répertoire de dépôt, c'est ici qu'il ajouter les modifications
-		*/
+		Si l'on souhaite afficher la liste des fichiers basées sur le contenu de la base de données ou la liste des fichiers disponibles dans le répertoire de dépôt, 
+		c'est ici qu'il ajouter les modifications
+		-------------------------------------------------------------------------*/
 		
 		return array();
 
     }
 
-
-	
     protected function count_file_objects() {
         return count($this->get_file_objects('is_valid_file_object'));
     }
@@ -398,11 +412,8 @@ class UploadHandler
 		$query = $this->db->prepare($sql);
 		$query->bindParam(':name', $file->name,PDO::PARAM_STR);
 		$query->execute();
-		if ($query->rowCount()==0){
-			//$file->name = $name;
-		}
-		else{
-			//$file->name = $name;
+		
+		if ($query->rowCount()!=0){
 			$file->error = $this->get_error_message('name_used');
 			return false;
 		}
@@ -704,8 +715,6 @@ class UploadHandler
 					$this->db->rollback();
 				}
 				else{
-					$file->info = MSG_UPLOAD_OK;
-					//error_log ("Just inserted a pck : " .$sql . " with id = " . $package_id);
 				
 					$sql = 'INSERT INTO `'.$this->options['db_history']
 					.'` (`package_id`, `state`, `substate`,`comment`,`date`)'
@@ -714,6 +723,13 @@ class UploadHandler
 					$query->bindParam(':package_id', $package_id,PDO::PARAM_INT);
 					$query->execute();
 					$this->db->commit();
+					
+					$file->info = MSG_UPLOAD_OK;
+					$file->package = $package;
+					$file->server = $server;
+					$file->user = $user;
+					//error_log ("Just inserted a pck : " .$sql . " with id = " . $package_id);
+
 				}
 			 }
 			catch(PDOException $ex){ 
