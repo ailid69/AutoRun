@@ -1,7 +1,8 @@
 <?php
 
     require_once 'config.php';
-    if(empty($_SESSION['user'])||$_SESSION['user']['isadmin']!=1) 
+    
+	if(empty($_SESSION['user'])||$_SESSION['user']['isadmin']!=1) 
     {
         header("Location: index.php?msg=1");
         die("Redirecting to index.php"); 
