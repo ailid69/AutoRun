@@ -1,31 +1,31 @@
 <?php
  require_once 'config.php';
-/* check if username is already registered */
 
+/*-------------------------------------------------------------------------------------------------
+	Permet de vérifier dynamiquement dans un formulaire si un nom d'utilisateur est déjà utilisé
+	Retourne un code HTTP 200 si le nom d'utilisateur est libre
+	Retourne un code HTTP 400 si le nom d'utilisateur n'est pas libre
+-------------------------------------------------------------------------------------------------*/		
+ 
 if (!empty($_GET['username'])){
 
-    //$username = $db->$_GET['userName'];
 	$username = $db->quote($_GET['username']);
-	//$query = "SELECT username FROM users WHERE username = '{$username}' LIMIT 1;";
 	$query = "SELECT username FROM users WHERE username = {$username};";
-   //printf($query);
+
 	try{ 
             $stmt = $db->prepare($query); 
-            $stmt->execute($query_params); 
+            $stmt->execute(); 
 			$result = $stmt->rowCount();
         } 
         catch(PDOException $ex){ die("Failed to run query: " . $ex->getMessage()); } 
         
-   printf("rows returned:" . $result);
     if($result == 0)
     {
         header("HTTP/1.1 200 OK");
-		printf("username free");
     }
     else
     {
         header("HTTP/1.1 400 ALREADY USED");
-		printf("username already used!");
     }
 }
 	else
