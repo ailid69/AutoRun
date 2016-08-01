@@ -1,5 +1,13 @@
 <?php
+	/*-------------------------------------------------------------------------------------------------
+		Page pour l'ajout d'utilisateur (réservé aux admin)
+	-------------------------------------------------------------------------------------------------*/		
     require_once 'config.php';
+
+	/*-------------------------------------------------------------------------------------------------
+		Redirige vers la page d'accueil si l'utilisateur n'est pas connecté 
+		ou si l'utilisateur est connecté en tant que simple utilisateur 
+	-------------------------------------------------------------------------------------------------*/		
 	if(empty($_SESSION['user'])||$_SESSION['user']['isadmin']!=1) 
     {
         header("Location: index.php?msg=1");
@@ -31,18 +39,16 @@
 <?php include('myNavBar.php'); ?>
          
 <div class="container hero-unit">
- 
 	<div class="panel panel-default">
-
-  <!-- Default panel contents -->
-  <div class="panel-heading">
-   <p><h2>Création d'un utilisateur</h2></p>
-  </div>
-  <div class="panel-body">
-
+		<div class="panel-heading">
+			<p><h2>Création d'un utilisateur</h2></p>
+		</div>
+		<div class="panel-body">
    <?php 
+   /*-------------------------------------------------------------------------------------------------
+		Si des données ont été postées alors il faut insérer un enregistrement en base
+	-------------------------------------------------------------------------------------------------*/		
 	if(!empty($_POST)){  
-		// Add row to database 
         $query = " 
             INSERT INTO users ( 
                 username,
@@ -62,7 +68,9 @@
                 :salt
             ) 
         "; 
-		// Security measures
+		/*-------------------------------------------------------------------------------------------------
+			Mesures de sécurité pour calculer le mot de passe à stocker en base
+		-------------------------------------------------------------------------------------------------*/		
         $salt = dechex(mt_rand(0, 2147483647)) . dechex(mt_rand(0, 2147483647)); 
         $password = hash('sha256', $_POST['password'] . $salt); 
         for($round = 0; $round < 65536; $round++){ $password = hash('sha256', $password . $salt); } 
@@ -120,7 +128,6 @@
 	<div class="row">
 		<div class="form-group col-md-3">
 			<label for="password" class="control-label">Mot de passe</label>
-			<!--div class="form-group"-->
 			<input type="password" data-minlength="6" class="form-control" name="password" id="password" placeholder="Mot de passe" required>
 			<div class="help-block">6 caractères minimum</div>
 		</div>

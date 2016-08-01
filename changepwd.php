@@ -1,10 +1,27 @@
 <?php
+	/*-------------------------------------------------------------------------------------------------
+		Page pour modifier le mot de passe d'un utilisateur
+		La page est accessible pour les administrateurs ou simple utilisateur
+		Un utilisateur peut modifier seulement son mot de passe
+		(seul l'administrateur peut changer le mot de passe d'un autre utilisateur)
+		Si l'utilisateur est admin, il n'a pas besoin de saisir le mot de passe actuel
+	-------------------------------------------------------------------------------------------------*/		   
     require_once 'config.php';
+	
+	/*-------------------------------------------------------------------------------------------------
+		Si l'id de l'utilisateur dont on veut modifier le mot de passe n'est pas spécifié
+		L'utilisatuer est redirigé vers la page d'accueil
+	-------------------------------------------------------------------------------------------------*/		   
+	
 	if (empty($_GET['id'])){
 		header("Location: index.php?msg=2");
         die("Redirecting to index.php");	
 	}
-   
+   /*-------------------------------------------------------------------------------------------------
+		Redirige vers la page d'accueil si l'utilisateur n'est pas connecté 
+		ou si l'utilisateur est connecté en tant que simple utilisateur 
+		et qu'il demande à modifier le mot de passe d'un autre utilisateur que lui même
+	-------------------------------------------------------------------------------------------------*/		
 	if(
 		empty($_SESSION['user']) ||
 		$_SESSION['user']['isadmin']!=1 && (
@@ -40,15 +57,14 @@
 <script src="/js/jquery.min.js"></script>
 <script src="/js/bootstrap.min.js"></script>
 <script src="/js/validator.min.js"></script>
-<?php include('myNavBar.php'); ?>
-<div class="container hero-unit">
- 
-	<div class="panel panel-default">
 
-  <!-- Default panel contents -->
-  <div class="panel-heading">
-   <p><h2>Modifier le mot de passe</h2></p>
-  <?php 
+<?php include('myNavBar.php'); ?>
+
+<div class="container hero-unit">
+	<div class="panel panel-default">
+		<div class="panel-heading">
+			<p><h2>Modifier le mot de passe</h2></p>
+ <?php 
 	
         $query = "SELECT username, password, salt FROM users WHERE id='{$_GET['id']}'";
        	
@@ -62,7 +78,9 @@
 
 	if(!empty($_POST['newpassword'])){
 		if ($_SESSION['user']['isadmin']==0){
-		// check current password
+		 /*------------------------------------------------------------------------------------------------- 
+		 Vérification du mot de passe actuel seulement si l'utilisateur n'est pas admin
+		 -------------------------------------------------------------------------------------------------*/
 			$pwd_ok = 0;
 			if($row){ 
 				$check_password = hash('sha256', $_POST['currentpassword'] . $row['salt']); 
@@ -134,6 +152,10 @@
 
 
  <?php 
+  
+  	/*------------------------------------------------------------------------------------------------- 
+		Si l'utilisateur n'est pas administrateur il devra saisir son mot de passe actuel
+	-------------------------------------------------------------------------------------------------*/
   if  ($_SESSION['user']['isadmin']!=1){
 	  
   echo'

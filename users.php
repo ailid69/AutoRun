@@ -1,5 +1,13 @@
 <?php
-
+	/*-------------------------------------------------------------------------------------------------
+		Page pour la Gestion des utilisateurs (réservé aux admin)
+		Liste les utilisateurs de l'applications
+			- filtre / tri des colonnes de la table (plugin dataTables)
+			- lien vers la page d'édition des informations utilisateurs
+			- lien vers la page de modification du mot de passe
+			- lien vers la page d'ajout d'utilisateurs
+			- possibilité de supprimer des utilisateurs
+	-------------------------------------------------------------------------------------------------*/		
     require_once 'config.php';
     
 	/*-------------------------------------------------------------------------------------------------
@@ -181,6 +189,12 @@ $query = "
 	<script src="/js/bootstrap.min.js"></script>
 	<script src="/js/dataTables.bootstrap.js"></script>
 	<script src="/js/jquery.dataTables.min.js"></script>
+	
+	<!-- -------------------------------------------------------------------------------------------------------------------
+		Initialisation de la table user : modification des messages pour affichage en francais
+		Les 3 dernières colonnes ne sont pas triable (ne contient pas d'information mais des boutons ou cases à cocher )
+	-------------------------------------------------------------------------------------------------------------------  -->
+	
 	<script type="text/javascript">
 			$(document).ready(function() {
 				$('#users').DataTable( {
@@ -230,7 +244,6 @@ $query = "
 <div class="container hero-unit">
 	<div class="panel panel-default">
 
-  <!-- Default panel contents -->
   <div class="panel-heading">
    <p><h2>Gestion des utilisateurs</h2></p>
   </div>
