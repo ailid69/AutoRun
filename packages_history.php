@@ -1,12 +1,22 @@
 <?php
-
+	/*-------------------------------------------------------------------------------------------------
+		Page pour visualiser le détail des opétations effectuées sur un package
+		L'admnistrateur a accès aux fonctions d'ajout et de suppression de fichiers de log
+		Il peut y avoir un ou plusieurs fichiers de log attachés à un chaque étape du cycle de vie d'un package
+	-------------------------------------------------------------------------------------------------*/	
     require_once 'config.php';
-    if(empty($_SESSION['user']))
+   
+	/*-------------------------------------------------------------------------------------------------
+		Redirige vers la page d'accueil si l'utilisateur n'est pas connecté 
+	-------------------------------------------------------------------------------------------------*/		
+   if(empty($_SESSION['user']))
     {
         header("Location: index.php?msg=4");
         die("Redirecting to index.php"); 
     }
-	
+	/*-------------------------------------------------------------------------------------------------
+		Redirige vers la page d'accueil si l'id du package n'est pas spécifié
+	-------------------------------------------------------------------------------------------------*/	
 	if (empty($_GET['viewHistory'])){
 			header("Location: index.php?msg=2");
 			die("Redirecting to index.php");
@@ -14,17 +24,27 @@
 	
 	$packid=$_GET['viewHistory'];
 	
-
+	/*-------------------------------------------------------------------------------------------------
+		Redirige vers la page d'accueil si l'utilisateur n'est pas administrateur et qu'il n'est pas authorisé à voir ce package
+	-------------------------------------------------------------------------------------------------*/	
 	if ($_SESSION['user']['isadmin']!=1 && isUserAllowedToViewPackage($db,$packid)==false){
 			header("Location: index.php?msg=8");
 			die("Redirecting to index.php");
 	}
 
 	else {
+	/*-------------------------------------------------------------------------------------------------
+		$package contient les informations relatives au package
+		$history continet les informations relative aux différents états du package dans le temps
+	-------------------------------------------------------------------------------------------------*/	
 		
-		$package = get_package_detail($db,$packid)[0] ;
+		$package = get_package_detail($db,$packid);
 		$history = get_package_history($db,$packid);	
 		
+		/*-------------------------------------------------------------------------------------------------
+			Gestion des données envoyés en POST 
+			Il s'agit de l'ajout ou de la suppression de fichier de log
+		-------------------------------------------------------------------------------------------------*/
 		if(!empty($_POST)){  
 		
 		$upload = false;
@@ -32,6 +52,11 @@
 
 		$array = array_keys($_POST);
 		foreach ($array as $param)
+		/*-------------------------------------------------------------------------------------------------
+			On parcourt l'ensemble des variables envoyées dans les POST
+			Si l'une d'elles commence par delete c'est que l'utilisateur a cliqué sur "Supprimer un fichier de log"
+			Le fin du nom de la variable permet de connaitre l'id du fichier à supprimer
+		-------------------------------------------------------------------------------------------------*/
 		{
 			if (substr($param,0,6)=="delete"){
 				
@@ -39,7 +64,12 @@
 				$delete = true;
 			}
 		}
-
+		
+		/*-------------------------------------------------------------------------------------------------
+			On parcourt l'ensemble des variables envoyées dans les POST
+			Pour savoir si l'utilisateur a cliqué sur "Charger un fichier de log"
+			Si c'est le cas on extrait l'id package history du nom du bouton
+		-------------------------------------------------------------------------------------------------*/
 		$array = array_keys($_FILES);
 		foreach ($array as $param){
 			
@@ -48,19 +78,15 @@
 					$upload = true;
 				}	
 		} 
-
-		
-		
 	
-		//if($_POST['packages_history_id'] && $_FILES['userfile']['size'] > 0) {
-		//print_r($_FILES['userfile_'.$id_packages_history]);
 		if($upload == true && $_FILES['userfile_'.$id_packages_history]['size'] > 0) {
-			
+			/*-------------------------------------------------------------------------------------------------
+				Procédure pour stocker le fichier téléchargé en base
+			-------------------------------------------------------------------------------------------------*/
 			$fileName = $_FILES['userfile_'.$id_packages_history]['name'];
 			$tmpName  = $_FILES['userfile_'.$id_packages_history]['tmp_name'];
 			$fileSize = $_FILES['userfile_'.$id_packages_history]['size'];
 			$fileType = $_FILES['userfile_'.$id_packages_history]['type'];
-			//$id_packages_history = $_POST['packages_history_id'];
 
 			$fp      = fopen($tmpName, 'r');
 			$content = fread($fp, filesize($tmpName));
@@ -71,7 +97,9 @@
 			{
 				$fileName = addslashes($fileName);
 			}
-
+			/*-------------------------------------------------------------------------------------------------
+				Requête pour insérer le fichier en base
+			-------------------------------------------------------------------------------------------------*/
 			$query = "INSERT INTO log_files (name, size, type, content,id_packages_history ) ".
 			"VALUES ('$fileName', '$fileSize', '$fileType', '$content', '$id_packages_history')";
 
@@ -86,6 +114,9 @@
 			} 
 		}
 		else if ($delete == true){
+			/*-------------------------------------------------------------------------------------------------
+				Procédure pour supprimer un fichier de log
+			-------------------------------------------------------------------------------------------------*/
 			$query = "DELETE FROM log_files WHERE id='$id_file'";
 
 			try {  
@@ -129,17 +160,14 @@
 
 <form enctype="multipart/form-data" role="form" action="packages_history.php?viewHistory=<?php echo $packid;?>" method="post">
 
-<!--input type="hidden" name="viewHistory" value="<?php //echo $packid;?>"-->
 <div class="container hero-unit">
 	<div class="panel panel-default">
+		<div class="panel-heading">
+			<p><h2>Cycle de vie d'un package</h2></p>
+		</div>
+	<div class="panel-body">
 
-  <!-- Default panel contents -->
-  <div class="panel-heading">
-   <p><h2>Cycle de vie d'un package</h2></p>
-  </div>
-  <div class="panel-body">
 
-  
 <?php 
 	if (isset($msg)){
 		echo ' <div class="alert alert-info" role="alert">'.$msg.'</div>';
@@ -148,7 +176,7 @@
 		echo ' <div class="alert alert-danger" role="alert">'.$errmsg.'</div>';
 	}
 ?>
- <!-- Table -->
+
 
 	<div class="panel panel-primary">
 	<div class="panel-heading">

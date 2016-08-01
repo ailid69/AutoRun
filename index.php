@@ -1,4 +1,8 @@
 <?php 
+	/*-------------------------------------------------------------------------------------------------
+		Page d'accueil 
+		Si l'utilisateur n'est pas connecété on affiche un formulaire de connexion 
+	-------------------------------------------------------------------------------------------------*/	
 	require_once 'config.php'; 
 ?> 
 
@@ -53,11 +57,8 @@
 	die;
 }
  ?>   
-	<div class="panel panel-default">
-		<div class="panel-heading">
-			<p><h2>Connexion</h2></p>
-		</div>
-		<div class="panel-body">
+		<p><h2>Connexion</h2></p>
+
 				<form action="/login.php" method="post"> 
 					<div class="form-group">
 						<label for="username" class="control-label">Utilisateur</label>
@@ -78,10 +79,7 @@
 					</div>
 					<input type="submit" class="btn btn-info" value="Login" /> 
 				</form> 
-		</div>
-	</div>
-</div>
 
+ </div>
 </body>
-
 </html>

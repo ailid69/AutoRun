@@ -59,7 +59,11 @@
    <p><h2>Editer un utilisateur</h2></p>
   </div>
   <?php 
-
+	
+	/*-------------------------------------------------------------------------------------------------
+		Si un id d'utilisateur est passé dans l'URL 
+		alors on récupère les informations de cet utilisateur depuis la base pour les afficher dans le formulaire
+	-------------------------------------------------------------------------------------------------*/		
 	if(!empty($_GET['id'])){  
         $query = "SELECT id,username,firstname,lastname,email,isadmin FROM users WHERE id='{$_GET['id']}'";
 		
@@ -75,6 +79,10 @@
 			$errmsg = 'Il y a eu un problême avec la base de données. <BR><code>'.$ex->getMessage().'</code>';
 		} 
 	}
+	/*-------------------------------------------------------------------------------------------------
+		Si des données sont envoyées en POST c'est que l'utilisateur à cliquer pour sauvegarder les modifications
+		Il faudra alors faire un UPDATE en base
+	-------------------------------------------------------------------------------------------------*/		
 	else if(!empty($_POST['userid'])){
 		if (!empty($_POST['isadmin'])){
 			$ismyuseradmin = 1;
@@ -82,6 +90,12 @@
 		else{
 			$ismyuseradmin = 0;
 		}
+		
+	/*-------------------------------------------------------------------------------------------------
+		Si l'utilisateur est admin, il a la possibilité de modifier le role (admin / user) de l'utilisateur en cours de modification 
+		La requete est différente selon le cas
+	-------------------------------------------------------------------------------------------------*/		
+		
 		if ($_SESSION['user']['isadmin']==1){
 			$query= "UPDATE users set firstname = '{$_POST['firstname']}',lastname='{$_POST['lastname']}',email='{$_POST['email']}',isadmin={$ismyuseradmin} WHERE id='{$_POST['userid']}'";
 		}
@@ -98,6 +112,9 @@
 			$errmsg = 'Il y a eu un problême avec la base de données. <BR><code>'.$ex->getMessage().'</code>';
 		}
 		
+	/*-------------------------------------------------------------------------------------------------
+		Après modification des informations, on affiche les données de l'utilisateur 	
+	-------------------------------------------------------------------------------------------------*/		
 		$query = "SELECT id,username,firstname,lastname,email,isadmin FROM users WHERE id='{$_POST['userid']}'";
 		
         try {  
@@ -118,6 +135,13 @@
   
   <div class="panel-body"> 
   <?php 
+  
+	/*-------------------------------------------------------------------------------------------------
+		Si le paramètre userid est passé en POST, c'est que l'on vient de modifier les données d'un utilisateur
+		Dans ce cas on affiche un bandeau d'information		
+	-------------------------------------------------------------------------------------------------*/		
+	
+  
   if (!empty($_POST['userid'])){
 		echo 
 			'
@@ -126,6 +150,10 @@
 			</div> 
 			';
 	}
+	
+	/*-------------------------------------------------------------------------------------------------
+		Si il y a eu une erreur, on affiche un bandeau d'erreur et on stoppe l'execution
+	-------------------------------------------------------------------------------------------------*/		
 	if (isset($errmsg)){
 			echo '<div class="alert alert-danger" role="alert">'.$errmsg.'</div>';
 			echo '</div></div></div></body></html>';
@@ -139,6 +167,7 @@
   <div class="form-group">
     <label for="username" class="control-label">Utilisateur</label>
     <input type="text" class="form-control" id="username" name="username" value="<?php echo $row['username'];?>" readonly>
+	<!-- On envoit le userid sous la forme d'un input hidden -->
 	<input type="hidden" class="form-control" id="userid" name="userid" value="<?php echo $row['id'];?>">
 	<div class="help-block with-errors"></div>
   </div>

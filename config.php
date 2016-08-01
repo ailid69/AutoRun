@@ -1,5 +1,15 @@
 <?php 
-/* ------------------------- SECTION A PARAMETRER EN FONCTION DE L'ENVIRONNEMENT ----------------------- */
+
+/*-------------------------------------------------------------------------------------------------
+	SECTION A PARAMETRER EN FONCTION DE L'ENVIRONNEMENT 
+	Ce fichier  : 
+		-sert à créer le lien vers la base de données
+		-sert à stocker des variables de l'application
+		-contient des fonctions utilisées par d'autres parties de l'application
+-------------------------------------------------------------------------------------------------*/
+
+	/* ini_set("display_errors", 1); doit être commenté en PRODUCTION */
+	ini_set("display_errors", 1);
 	/* Variables de connexion à la base mySQL */
 		define("USERNAME","webuser");
 		define("PASSWORD","webuser");
@@ -14,7 +24,7 @@
 		define("ACCEPT_FILE_TYPES","/.(zip)$/i");
 	/* Statut à écrire en base quand la phase d'upload est en succès */
 		define("MSG_UPLOAD_OK","Le package est bien téléchargé, en attente de contrôle");
-	/* Mot de passe pour lire les archives */
+	/* Mot de passe pour lire les archives -- Pas nécessaire car on ne fait que lire les commentaires de l'archive*/
 		//define ("ZIP_PASSWORD","AutoRun");
 	/* Sépateur  entre deux parmètres dans la section commentaire des archives .zip */
 		define("ZIPCOMMENT_SEPARATOR","\r\n");
@@ -26,12 +36,10 @@
 		define ("LOGFILE","/var/log/apache2/autorun");
 /* ------------------------- SECTION A PARAMETRE EN FONCTION DE L'ENVIRONNEMENT ----------------------- */	
 	
-	ini_set("display_errors", 1);
-	
+	/* $db permet d'accèder à la base de données*/
 	$db;
     $options = array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'); 
     try { 
-		//$db = new PDO("mysql:host={::HOST};dbname={::DBNAME};charset=utf8", ::USERNAME, ::PASSWORD, $options); 
 		$db = new PDO('mysql:host='.HOST.';dbname='.DBNAME.';charset=utf8', USERNAME, PASSWORD, $options); 
 	} 
 	catch(PDOException $ex){ 
@@ -41,23 +49,22 @@
 	$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); 
     $db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC); 
 	
-		session_start(); // ready to go!
+		session_start(); // Démarrage de la session php 
 		$now = time();
 		if (isset($_SESSION['discard_after']) && $now > $_SESSION['discard_after']) {
-		// this session has worn out its welcome; kill it and start a brand new one
+		//La session a expirée, on en crée une nouvelle
 			session_unset();
 			session_destroy();
 			session_start();
 		}
 
-// either new or old, it should live at most for another hour
+// La durée de vie de la session est étendue d'une heure
 		$_SESSION['discard_after'] = $now + 3600;
 
-//header('Content-Type: text/html; charset=utf-8'); 
 
-//		echo ('<BR>' . session_status());
-//		echo ('<BR>' . session_id());
-		
+	/* ---------------------------------------------------------------------------------------
+		Retourne un tableau contenant pour chaque package, des informations sur ce package ainsi que sur son dernier état
+	---------------------------------------------------------------------------------------- */		
 	function show_last_status_by_package($mydb,$user,$isadmin){
 	
 		$query = 'SELECT '
@@ -92,6 +99,9 @@
 		return $stmt->fetchAll();
 	}
 	
+	/* ---------------------------------------------------------------------------------------
+		Retourne un tableau contenant les informations d'un package
+	---------------------------------------------------------------------------------------- */		
 	function get_package_detail($mydb,$packid){
 	
 		$query = '
@@ -107,9 +117,12 @@
 	
         } 
         catch(PDOException $ex){ die("Failed to run query: " . $ex->getMessage()); } 
-		return $stmt->fetchAll();
+		return $stmt->fetch();
 	}
 	
+	/* ---------------------------------------------------------------------------------------
+		Retourne un tableau contenant l'ensemble des états d'un package
+	---------------------------------------------------------------------------------------- */		
 	function get_package_history($mydb,$packid){
 	
 		$query = '
@@ -126,7 +139,9 @@
         catch(PDOException $ex){ die("Failed to run query: " . $ex->getMessage()); } 
 		return $stmt->fetchAll();
 	}
-	
+	/* ---------------------------------------------------------------------------------------
+		Retourne un tableau contenant l'ensemble des fichiers de logs pour un $pack_hist_id donné
+	---------------------------------------------------------------------------------------- */	
 	function get_logFiles($mydb,$pack_hist_id){
 		$query = '
 		SELECT 
@@ -142,6 +157,12 @@
         catch(PDOException $ex){ die("Failed to run query: " . $ex->getMessage()); } 
 		return $stmt->fetchAll();
 	}
+	
+	
+	/* ---------------------------------------------------------------------------------------
+		Retourne l'ensemble des informations relatives à un fichier de log stocké en base (y compris son contenu)
+		Si l'utilisateur n'est pas admin on s'assurera que le fichier est bien associé à un package que l'utilisateur a chargé
+	---------------------------------------------------------------------------------------- */	
 	
 	function get_logFile_with_content($mydb,$fileid,$myuser){
 			$query = 'SELECT isadmin FROM users WHERE id = "'. $myuser . '"';
@@ -173,9 +194,14 @@
             $result = $stmt->execute(); 
         } 
         catch(PDOException $ex){ die("Failed to run query: " . $ex->getMessage()); } 
-		return $stmt->fetchAll();
+		return $stmt->fetch();
 	}
-
+	
+	/* ---------------------------------------------------------------------------------------
+		Vérifie que l'utilisateur en cours est bien authorisé à visualiser le pacjage specifié en paramètre 
+		Retourne TRUE si le package existe et qu'il a été chargé par l'utilisateur en cours
+		Retourne FALSE sinon
+	---------------------------------------------------------------------------------------- */	
 	function isUserAllowedToViewPackage($mydb,$pack){
 
 		$query = 'SELECT uploaded_by FROM packages WHERE id="'.$pack.'"';
@@ -200,7 +226,10 @@
 			}
 		}
 	}
-	
+	/* ---------------------------------------------------------------------------------------
+		Retourne un texte d'erreur en fonction d'un code d'erreur passé en paramètre
+		Sert pour l'affichage d'un bandeau d'erreur sur la page d'acceuil suite à une redirection
+	---------------------------------------------------------------------------------------- */	
 	function displayErrorMessage($errCode){
 		switch ($errCode){
 			case 1 : $msg = "Vous devez être connecté en tant qu'administrateur pour accéder à cette partie de l'application.";break;
@@ -208,9 +237,10 @@
 			case 3 : $msg = "Pour changer un mot de passe il faut être connecté et seul les administrateurs peuvent modifier les mots de passe des autres utilisateurs.";break;
 			case 4 : $msg = "Vous devez être connecté pour accéder à cette partie de l'application.";break;
 			case 5 : $msg = "Vous avez tenté de télécharger un fichier qui n'existe pas ou sur lequel vous n\'avez pas de droits.";break;
-			case 6 : $msg = "Problème d'authentification.<BR>Merci de vérifier votre nom d\'utilisateur et mot de passe.";break;
+			case 6 : $msg = "Problème d'authentification.<BR>Merci de vérifier votre nom d'utilisateur et mot de passe.";break;
 			case 7 : $msg = "Vous avez tenté d'éditer les informations d'un autre utiliseateur alors que vous n'êtes pas administrateur!";break;
 			case 8 : $msg = "Vous avez tenté d'obtenir des informations sur un package que vous n'avez pas chargé alors que vous n'êtes pas administrateur!";break;
+			case 9 : $msg = "Ce nom d'utilisateur n'existe pas.";break;
 			
 		
 			default : 	$msg = "";break;
@@ -218,6 +248,9 @@
 		return $msg;
 	}
 	
+	/* ---------------------------------------------------------------------------------------
+		Retourne TRUE si un package est déjà présent en base avec de nom, FALSE sinon
+	---------------------------------------------------------------------------------------- */	
 	function isNewPackage($mydb,$package){
 		$query ='SELECT COUNT(id) as nb FROM packages WHERE package="'.$package.'"';
 		 try {  
@@ -226,7 +259,6 @@
 			$res = $stmt->fetch();
 			} 
         catch(PDOException $ex){ die("Failed to run query: " . $ex->getMessage()); } 
-		//print_r($res);
 		if ($res['nb']==0){
 			return true;
 		}
@@ -235,6 +267,10 @@
 		}
 	}
 	
+	/* ---------------------------------------------------------------------------------------
+		Retourne un message d'information en fonction d'un code d'information passé en paramètre
+		Sert pour l'affichage d'un bandeau d'information sur la page d'acceuil suite à une redirection
+	---------------------------------------------------------------------------------------- */	
 	function displayInfoMessage($errCode){
 		switch ($errCode){
 			case 1 : $msg = 'Bonjour <strong>'.$_SESSION['user']['username'].'</strong>.<BR>Vous êtes connecté en tant qu\'administrateur...';break;
@@ -245,6 +281,9 @@
 		return $msg;
 	}
 	
+	/* ---------------------------------------------------------------------------------------
+		Sert à convertir une taiile  en octet en taille en o / Ko ou Mo
+	---------------------------------------------------------------------------------------- */	
 	function sizetohumanreadable($size){
 		$mysize = intval($size);
 		if ($mysize==0 || empty($mysize)){
@@ -263,11 +302,15 @@
 			return $mysize;
 		}
 	}
-	
+	/* ---------------------------------------------------------------------------------------
+		Fonction pour écrire dans un fichier de log 
+		Crée un fichier par jour 
+		Pour chaque ligne on ajoute des informations (IP et date)
+	---------------------------------------------------------------------------------------- */	
 	function writeLog($msg){
-		//Something to write to txt log
+		
 		$log  = "User: ".$_SERVER['REMOTE_ADDR'].' - '.date("F j, Y, g:i a"). '------------------------- : '.$msg . PHP_EOL;
-		//Save string to log, use FILE_APPEND to append.
+		
 		file_put_contents(LOGFILE . date("Ymj") . '.log', $log, FILE_APPEND);
 	}
 	
