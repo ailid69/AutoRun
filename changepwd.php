@@ -66,7 +66,7 @@
 			<p><h2>Modifier le mot de passe</h2></p>
  <?php 
 	
-        $query = "SELECT username, password, salt FROM users WHERE id='{$_GET['id']}'";
+        $query = "SELECT id, username, password, salt FROM users WHERE id='{$_GET['id']}'";
        	
 		try {  
             $stmt = $db->prepare($query); 

@@ -20,6 +20,7 @@
 		define("DB_PACKAGEHISTORYTABLE" ,"packages_history");
 	/* chemin vers le répertoire de dépot des packages (l'utilisateur apache doit avoir les droits en écriture)*/
 		define("UPLOAD_DIR","/home/ailid/PACKAGE_REPO/");
+		//define("UPLOAD_DIR","C:/temp/EDF/");
 	/* Expression régulière pour filtrer les fichier à télécharger */
 		define("ACCEPT_FILE_TYPES","/.(zip)$/i");
 	/* Statut à écrire en base quand la phase d'upload est en succès */
@@ -68,20 +69,20 @@
 	function show_last_status_by_package($mydb,$user,$isadmin){
 	
 		$query = 'SELECT '
-		.'p.id,p.name,p.upload_date,p.archive,p.autorun,p.package,p.created,p.project,p.server,p.user,p.comment,p.size,p.autorun,'
+		.'p.name,p.upload_date,p.autorun,p.package,p.created,p.project,p.server,p.user,p.comment,p.size,p.autorun,'
 		.'laststatus.state,laststatus.substate,laststatus.comment,laststatus.date,'
 		.'u.username
 					FROM packages p  
 					LEFT JOIN
 						(SELECT p.* FROM packages_history p 
 							INNER JOIN
-								(SELECT package_id, MAX(date) AS maxdate
+								(SELECT package, MAX(date) AS maxdate
 									FROM packages_history
-									GROUP BY package_id
+									GROUP BY package
 								) p2 
-							ON p.package_id = p2.package_id AND p.date = p2.maxdate
+							ON p.package = p2.package AND p.date = p2.maxdate
 						) laststatus
-					ON laststatus.package_id = p.id
+					ON laststatus.package = p.package
 					LEFT JOIN users u on u.id = p.uploaded_by';
 		if ($isadmin != 1) {
 			$query = $query . ' WHERE p.uploaded_by = "' .$user .'"';
@@ -103,13 +104,13 @@
 		Retourne un tableau contenant les informations d'un package
 	---------------------------------------------------------------------------------------- */		
 	function get_package_detail($mydb,$packid){
-	
+		
 		$query = '
 		SELECT 
-			p.id, p.name,p.upload_date,p.archive,p.autorun,p.package,p.created,p.project,p.server,p.user,p.comment,
+			p.name,p.upload_date,p.autorun,p.package,p.created,p.project,p.server,p.user,p.comment,
 			u.username
 			from packages p LEFT JOIN users u on u.id = p.uploaded_by
-			WHERE p.id="'.$packid.'"';
+			WHERE p.package="'.$packid.'"';
 	
 		  try {  
 			$stmt = $mydb->prepare($query); 
@@ -124,12 +125,12 @@
 		Retourne un tableau contenant l'ensemble des états d'un package
 	---------------------------------------------------------------------------------------- */		
 	function get_package_history($mydb,$packid){
-	
+		
 		$query = '
 		SELECT 
 			state, substate, comment,date,id
 		FROM packages_history
-		WHERE package_id = "' . $packid . '" ORDER BY date DESC
+		WHERE package = "' . $packid . '" ORDER BY date DESC
 		';			
 		  try {  
 			$stmt = $mydb->prepare($query); 
@@ -183,7 +184,7 @@
 					INNER JOIN packages_history h 
 						ON h.id = l.id_packages_history 
 					INNER JOIN packages p 
-						ON p.id = h.package_id
+						ON p.package = h.package
 					INNER JOIN users u 
 						ON u.id = p.uploaded_by
 				WHERE l.id = "' . $fileid . '" AND u.id = "'.$myuser.'"
@@ -204,7 +205,7 @@
 	---------------------------------------------------------------------------------------- */	
 	function isUserAllowedToViewPackage($mydb,$pack){
 
-		$query = 'SELECT uploaded_by FROM packages WHERE id="'.$pack.'"';
+		$query = 'SELECT uploaded_by FROM packages WHERE package="'.$pack.'"';
 		  try {  
 			$stmt = $mydb->prepare($query); 
             $result = $stmt->execute(); 
@@ -252,7 +253,7 @@
 		Retourne TRUE si un package est déjà présent en base avec de nom, FALSE sinon
 	---------------------------------------------------------------------------------------- */	
 	function isNewPackage($mydb,$package){
-		$query ='SELECT COUNT(id) as nb FROM packages WHERE package="'.$package.'"';
+		$query ='SELECT COUNT(package) as nb FROM packages WHERE package="'.$package.'"';
 		 try {  
 			$stmt = $mydb->prepare($query); 
             $result = $stmt->execute(); 

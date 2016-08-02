@@ -117,6 +117,20 @@
 			/*-------------------------------------------------------------------------------------------------
 				Procédure pour supprimer un fichier de log
 			-------------------------------------------------------------------------------------------------*/
+			$query = "SELECT name FROM log_files WHERE id='$id_file'";
+
+			try {  
+				$stmt = $db->prepare($query); 
+				$result = $stmt->execute(); 
+				} 
+			catch(PDOException $ex){ 
+				$errmsg = 'Il y a eu un problême avec la suppression du fichier de log <strong>' . $fileName . '</strong>';
+	
+			}
+			
+			$res = $stmt->fetch();
+			$fileName = $res['name'];
+			
 			$query = "DELETE FROM log_files WHERE id='$id_file'";
 
 			try {  
@@ -189,8 +203,8 @@
 			<div class="col-md-2">Nom du package</div>
 			<div class="col-md-2">Nom du fichier</div>
 			<div class="col-md-2">Créé le</div>
-			<div class="col-md-2">Téléchargé par</div> 
-			<div class="col-md-2">Téléchargé le</div>
+			<div class="col-md-2">Chargé par</div> 
+			<div class="col-md-2">Chargé le</div>
 			<div class="col-md-2">Créé à partir de</div>
 	</div>
 	</h4>	
@@ -208,7 +222,6 @@
 	?>
 	<H4>
 	<div class="row"> 
-			<div class="col-md-2">Nom de l'archive</div>
 			<div class="col-md-2">Projet</div>
 			<div class="col-md-2">Serveur</div>
 			<div class="col-md-2">Utilisateur</div>
@@ -218,7 +231,6 @@
 	<?php 
 	echo '
 	<div class="row"> 
-			<div class="col-md-2">'. $package['archive'] .'</div>
 			<div class="col-md-2">'. $package['project'] .'</div>
 			<div class="col-md-2">'. $package['server'] .'</div>
 			<div class="col-md-2">'. $package['user'] .'</div>
@@ -275,7 +287,7 @@
 		echo '<td>';
 		foreach($result as $file){
 			echo 	'<div class="row">' ;
-				echo	'<span style="font-size:10px;"> 
+				echo	'<span style="font-size:12px;"> 
 							<div class="col-md-8">
 								<a href="download.php?id='.$file['id'].'">'. $file['name'] .'</a>
 							</div>

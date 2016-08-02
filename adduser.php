@@ -82,8 +82,12 @@
 			$stmt->bindValue(':lastname', $_POST['lastname'], PDO::PARAM_INT);
 			$stmt->bindValue(':email', $_POST['email'], PDO::PARAM_INT);
 			$stmt->bindValue(':password', $password, PDO::PARAM_INT);
-			if ($_POST['isadmin']=="isadmin")	{$stmt->bindValue(':isadmin', 1, PDO::PARAM_INT);}
-			else								{$stmt->bindValue(':isadmin', 0, PDO::PARAM_INT);}
+			if (isset($_POST['isadmin']) && $_POST['isadmin'] =="isadmin")	{
+				$stmt->bindValue(':isadmin', 1, PDO::PARAM_INT);
+			}
+			else{
+				$stmt->bindValue(':isadmin', 0, PDO::PARAM_INT);
+			}
 			$stmt->bindValue(':salt', $salt, PDO::PARAM_INT);
             $result = $stmt->execute(); 
 			echo 

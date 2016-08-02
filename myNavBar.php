@@ -74,7 +74,7 @@
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Fonctions utilisateur<span class="caret"></span></a>
           <ul class="dropdown-menu">
             <li><a href="/packages.php">Gestion des packages</a></li>
-			<li><a href="/fileupload/fileupload.php">Téléchargement de packages</a></li>
+			<li><a href="/fileupload/fileupload.php">Chargement de packages</a></li>
           </ul>
 
         </li>

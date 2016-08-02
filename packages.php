@@ -11,7 +11,7 @@
 	-------------------------------------------------------------------------------------------------*/		
     if(empty($_SESSION['user']))
     {
-        header("Location: index.php?info=4");
+        header("Location: index.php?msg=4");
         die("Redirecting to index.php"); 
     }
 ?>
@@ -99,7 +99,7 @@
 			<td>' . $row['project'] .'</td> 
 			<td>' . $row['server'] .'</td> 
 			<td>' . $row['user'] .'</td>
-			<td><button type="submit" class="btn btn-info btn btn-primary btn-xs" name="viewHistory" value="'.$row['id'] .'">Historique</button></a></td>
+			<td><button type="submit" class="btn btn-info btn btn-primary btn-xs" name="viewHistory" value="'.$row['package'] .'">Historique</button></a></td>
 		</tr>
 		';
 		}

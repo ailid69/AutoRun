@@ -8,6 +8,17 @@
 
 	Si file->info existe on affichera un label Success avec le contenu de file->info ainsi que des inforamtions relatives au package chargé
 	So file -> error existe on afficher un label Error avec le contenu de file->error
+	
+	Vérifications : 
+		-Le nom de fichier doit être unique (pas connu en base)
+		-Les fichiers chargés doivent pouvoir être déplacé vers le répertoire de dépôt
+		-L'extension des fichiers chargés doit être .zip
+		-Les fichiers chargés doivent être des archives zip valides
+		-L'extention zip pour php doit être active
+		-Les archives zip doivent comprendre des commentaires
+		-Dans les commentaires il doit y avoir un "champ" PACKAGE
+		-Le nom de package doit être unique en base
+		-Le nom de package doit être le même que le nom de fichier
 ----------------------------------------------------------- */
 
 require_once ('./../../../config.php');
@@ -293,7 +304,7 @@ class UploadHandler
 		if ($_SERVER['REQUEST_METHOD'] === 'GET') {
             
 			try{
-				$sql = 'SELECT `id`, `uploaded_by` FROM `'
+				$sql = 'SELECT `uploaded_by` FROM `'
 					.$this->options['db_table'].'` WHERE `name`=:name';
 				$query = $this->db->prepare($sql);
 				$query->bindParam(':name', $file->name,PDO::PARAM_STR);
@@ -301,7 +312,7 @@ class UploadHandler
 
 
 				while ($row = $query->fetch()) {
-					$file->id = $row['id'];
+
 					$file->uploaded_by = $row['uploaded_by'];
 				}
 			}
@@ -407,7 +418,7 @@ class UploadHandler
             return false;
         }
         		
-		// Pour vérifier que le nom de fichier 
+		// Pour vérifier que le nom de fichier n'est pas déjà connu en base
 		$sql = 'SELECT `name` FROM `'.$this->options['db_table'].'` WHERE `name`=:name';
 		$query = $this->db->prepare($sql);
 		$query->bindParam(':name', $file->name,PDO::PARAM_STR);
@@ -618,7 +629,9 @@ class UploadHandler
 						foreach($arr as $value)
 						{
 							$val = explode(ZIPCOMMENT_SEPARATOR_PARAMVAL,$value);
-							$result[trim($val[0])] = trim($val[1]);
+							if (!empty($val) && !empty($val[0]) && !empty($val[1])){
+								$result[trim($val[0])] = trim($val[1]);
+							}
 						}
 									
 						$package="";
@@ -628,7 +641,7 @@ class UploadHandler
 						$server="";
 						$user="";
 						$comment="";
-						
+									
 						if (isset($result['Package'])){
 							$package=$result['Package'];
 						}
@@ -664,10 +677,16 @@ class UploadHandler
 							$file->error="Impossible d'extraire l'ID du package depuis l'archive zip";
 							unlink($file_path);
 						}
+						/* Le nom du fichier doit correspondre au nom du package */
+						else if (strcasecmp($package.'.zip', $file->name) != 0) {
+							$file->error='Le nom du fichier ('. $file->name . ') doit correspondre au nom du package ('.$package .')';
+							unlink($file_path);
+						}
 						else if (!isNewPackage($this->db,$package)){
 							$file->error='Impossible d\'importer plusieurs fois le même package ('.$package .')';
 							unlink($file_path);
 						}
+						
 						$zip->close();
 					}
 
@@ -710,17 +729,17 @@ class UploadHandler
 				$query->bindParam(':user', $user, PDO::PARAM_STR);
 				$query->bindParam(':comment', $comment, PDO::PARAM_STR);
 				$query->execute();
-				$package_id =  $this->db->lastInsertId();
+				/*$package_id =  $this->db->lastInsertId();
 				if ($package_id == 0){
 					$this->db->rollback();
 				}
 				else{
-				
+				*/
 					$sql = 'INSERT INTO `'.$this->options['db_history']
-					.'` (`package_id`, `state`, `substate`,`comment`,`date`)'
-					.' VALUES (:package_id, "UPLOAD", "OK", "'. MSG_UPLOAD_OK .'", NOW())';
+					.'` (`package`, `state`, `substate`,`comment`,`date`)'
+					.' VALUES (:package, "UPLOAD", "OK", "'. MSG_UPLOAD_OK .'", NOW())';
 					$query = $this->db->prepare($sql);
-					$query->bindParam(':package_id', $package_id,PDO::PARAM_INT);
+					$query->bindParam(':package', $package,PDO::PARAM_STR);
 					$query->execute();
 					$this->db->commit();
 					
@@ -728,9 +747,7 @@ class UploadHandler
 					$file->package = $package;
 					$file->server = $server;
 					$file->user = $user;
-					//error_log ("Just inserted a pck : " .$sql . " with id = " . $package_id);
-
-				}
+				//}
 			 }
 			catch(PDOException $ex){ 
 				$file->error = $ex->getMessage() . " \n SQL QUERY : " . $sql ;
