@@ -1,14 +1,41 @@
 <?php
-
+	/*-------------------------------------------------------------------------------------------------
+		Page pour la Gestion des utilisateurs (réservé aux admin)
+		Liste les utilisateurs de l'applications
+			- filtre / tri des colonnes de la table (plugin dataTables)
+			- lien vers la page d'édition des informations utilisateurs
+			- lien vers la page de modification du mot de passe
+			- lien vers la page d'ajout d'utilisateurs
+			- possibilité de supprimer des utilisateurs
+	-------------------------------------------------------------------------------------------------*/		
     require_once 'config.php';
-    if(empty($_SESSION['user'])||$_SESSION['user']['isadmin']!=1) 
+    
+	/*-------------------------------------------------------------------------------------------------
+		Redirige vers la page d'accueil si l'utilisateur n'est pas connecté 
+		ou si l'utilisateur est connecté mais pas en tant qu'administrateur 
+	-------------------------------------------------------------------------------------------------*/		
+	
+	if(empty($_SESSION['user'])||$_SESSION['user']['isadmin']!=1) 
     {
         header("Location: index.php?msg=1");
         die("Redirecting to index.php"); 
     }
-
+	
+	/*-------------------------------------------------------------------------------------------------
+		Gestion des cas ou des données ont été postées 
+	-------------------------------------------------------------------------------------------------*/		
+	
 	if(!empty($_POST)){  
-		if ($_POST['delete_users']){
+	
+		/*-------------------------------------------------------------------------------------------------
+			Gestion du cas "Suppression d'utilisateurs" 
+		-------------------------------------------------------------------------------------------------*/		
+		
+		if (!empty($_POST['delete_users'])){
+			
+			$usersToDel = "";
+			$usersToDelDisplayName="";
+			
 			$emptyQuery = true;
 			foreach ($_POST as $key => $value) {
 				if (substr ( $key , 0, 4 ) == 'del_') 
@@ -19,7 +46,11 @@
 					$usersToDelDisplayName .= $_POST['username_'.$rest] . ',';
 				}
 			}
-				
+			
+			/*-------------------------------------------------------------------------------------------------			
+				Si l'utilisateur clique sur "Suppression d'utilisateurs" mais qu'aucun utilisateur n'a été sélectionné
+				On affiche un bandeau d'alerte 
+			-------------------------------------------------------------------------------------------------*/		
 			if ($emptyQuery==true){
 				
 				$alert='
@@ -31,6 +62,13 @@
 				';
 		
 			}
+			
+			/*-------------------------------------------------------------------------------------------------			
+				Si l'utilsateur clique sur "Suppression d'utilisateurs" et que un ou plusieurs utilisateurs ont été sélectionnés
+				On affiche un bandeau de confirmation qui reprend le nom des utilisateurs à supprimer
+				La liste des id utilisateurs à supprimer est envoyé en POST dans la variable 'usersToDel'
+			-------------------------------------------------------------------------------------------------*/		
+			
 			else
 			{
 				$usersToDel = substr($usersToDel,0,strlen($usersToDel)-1);
@@ -49,13 +87,18 @@
 				
 			}
 		}
-		elseif ($_POST['deleteUsersOK'])
+		
+		/*-------------------------------------------------------------------------------------------------			
+			L'utilisateur a confirmé la suppression d'une liste d'utilisateurs 
+		-------------------------------------------------------------------------------------------------*/		
+		
+		elseif (!empty($_POST['deleteUsersOK']))
 		{
 			$query = "DELETE FROM users WHERE id IN (".$_POST['usersToDel'] ." )"; 
 			
 			try{ 
 				$stmt = $db->prepare($query); 
-				$result = $stmt->execute($query_params); 
+				$result = $stmt->execute(); 
 			} 
 			catch(PDOException $ex){ die("Failed to run query: " .$query .'.' . $ex->getMessage()); } 
 			$alert = ' 
@@ -64,28 +107,38 @@
 			</div>
 			';
 		}
-		elseif ($_POST['deleteUsersCancel'])
+		
+		/*-------------------------------------------------------------------------------------------------			
+			Si l'utilisateur ne confirme pas la suppression des utilisateurs, il est redirigé vers la page "users.php"
+		-------------------------------------------------------------------------------------------------*/		
+		elseif (!empty($_POST['deleteUsersCancel']))
 		{
 			header("Location: users.php");
 		}
-		elseif ($_POST['add_user'])
+		
+		/*-------------------------------------------------------------------------------------------------			
+			Si l'utilisateur a cliqué sur "Ajouter des utilisateurs"
+			il est redirigé vers la page "adduser.php"
+		-------------------------------------------------------------------------------------------------*/		
+		elseif (!empty($_POST['add_user']))
 		{
 			header("Location: adduser.php");
 		}
 		else
+		/*-------------------------------------------------------------------------------------------------			
+			Si des données ont été postées et que l'on n'est dans aucun des cas précédents
+			Alors l'utilisateur a cliqué sur "Editer" ou "Changer le mot de passe"
+		-------------------------------------------------------------------------------------------------*/			
 		{		
 			foreach ($_POST as $key => $value) {
-				echo $key . '<BR>';
 				if (substr ( $key , 0, 10 ) == 'edit_user_') 
 				{
 					$id = substr($key, 10, strlen($key)-10);
-					echo 'EDIT' . $id;
 					header("Location: edituser.php?id=". $id);
 				}
 				else if (substr ( $key , 0, 4 ) == 'pwd_') 
 				{
 					$id = substr($key, 4, strlen($key)-4);
-					echo 'PWD' . $id;
 					header("Location: changepwd.php?id=". $id);
 				}
 			}
@@ -93,7 +146,9 @@
 		}
 	}
 
-	
+/*-------------------------------------------------------------------------------------------------			
+	Récupération de l'ensemble des utilisateurs présents en base pour affichage dans un tableau
+-------------------------------------------------------------------------------------------------*/				
 $query = " 
             SELECT 
 				id,
@@ -134,6 +189,12 @@ $query = "
 	<script src="/js/bootstrap.min.js"></script>
 	<script src="/js/dataTables.bootstrap.js"></script>
 	<script src="/js/jquery.dataTables.min.js"></script>
+	
+	<!-- -------------------------------------------------------------------------------------------------------------------
+		Initialisation de la table user : modification des messages pour affichage en francais
+		Les 3 dernières colonnes ne sont pas triable (ne contient pas d'information mais des boutons ou cases à cocher )
+	-------------------------------------------------------------------------------------------------------------------  -->
+	
 	<script type="text/javascript">
 			$(document).ready(function() {
 				$('#users').DataTable( {
@@ -183,7 +244,6 @@ $query = "
 <div class="container hero-unit">
 	<div class="panel panel-default">
 
-  <!-- Default panel contents -->
   <div class="panel-heading">
    <p><h2>Gestion des utilisateurs</h2></p>
   </div>
@@ -239,7 +299,6 @@ $query = "
 </div>
 
 <script type="text/javascript">
-	// For demo to fit into DataTables site builder...
 	$('#users').removeClass( 'display' );
 	$('#users').addClass('table table-striped table-bordered');
 </script>

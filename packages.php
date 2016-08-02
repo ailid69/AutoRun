@@ -1,9 +1,17 @@
 <?php
-
+	/*-------------------------------------------------------------------------------------------------
+		Page pour visualiser le dernier état de chaque package
+		La page est disponible pour le role administrateur (voit tous les packages)	
+		et pour le role utilisateur (ne voit que les package qu'il a chargé)
+	-------------------------------------------------------------------------------------------------*/	
     require_once 'config.php';
+	
+	/*-------------------------------------------------------------------------------------------------
+		Redirige vers la page d'accueil si l'utilisateur n'est pas connecté 
+	-------------------------------------------------------------------------------------------------*/		
     if(empty($_SESSION['user']))
     {
-        header("Location: index.php?info=4");
+        header("Location: index.php?msg=4");
         die("Redirecting to index.php"); 
     }
 ?>
@@ -43,10 +51,8 @@
 ?>
  
 <form role="form" action="packages_history.php" method="get">
- <!-- Table -->
 <span style="font-size:11px;">
   <table id="packages" class="table" cellspacing="0" width="100%">
-    
 	<thead> 
 		<tr> 
 			<th>Nom du package</th>
@@ -66,7 +72,6 @@
 	
 	<?php
 	   $result = show_last_status_by_package($db,$_SESSION['user']['id'],$_SESSION['user']['isadmin']);
-		//echo(print_r($result,1));
 	   
 	   foreach ($result as $row){
 		   switch ($row['substate']){
@@ -94,7 +99,7 @@
 			<td>' . $row['project'] .'</td> 
 			<td>' . $row['server'] .'</td> 
 			<td>' . $row['user'] .'</td>
-			<td><button type="submit" class="btn btn-info btn btn-primary btn-xs" name="viewHistory" value="'.$row['id'] .'">Historique</button></a></td>
+			<td><button type="submit" class="btn btn-info btn btn-primary btn-xs" name="viewHistory" value="'.$row['package'] .'">Historique</button></a></td>
 		</tr>
 		';
 		}

@@ -11,6 +11,16 @@ require_once ('./../../../config.php');
  * http://www.opensource.org/licenses/MIT
  */
 
+$options = array(
+    'delete_type' => 'POST',
+    'db_host' => HOST,
+    'db_user' => USERNAME,
+    'db_pass' => PASSWORD,
+    'db_name' => DBNAME,
+    'db_table' => DB_PACKAGETABLE,
+	'db_history' => DB_PACKAGEHISTORYTABLE
+); 
+ 
 class UploadHandler
 {
     protected $options;
@@ -180,6 +190,19 @@ class UploadHandler
     }
 
     protected function initialize() {
+		
+		try { 
+			$options = array(PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8'); 
+			$connString = 'mysql:host=' . $this->options['db_host'] . ';dbname='.$this->options['db_name'] . ';charset=utf8';
+			$this->db = new PDO($connString, $this->options['db_user'], $this->options['db_pass'], $options); 
+			$this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION); 
+			$this->db->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+		}
+	 
+		catch(PDOException $ex){ 
+			die("Failed to connect to the database: " . $ex->getMessage());
+		}
+		
         switch ($this->get_server_var('REQUEST_METHOD')) {
             case 'OPTIONS':
             case 'HEAD':
@@ -271,19 +294,26 @@ class UploadHandler
     }
 
     protected function set_additional_file_properties($file) {
-		/* DO NOTHING 
-	   $file->deleteUrl = $this->options['script_url']
-            .$this->get_query_separator($this->options['script_url'])
-            .$this->get_singular_param_name()
-            .'='.rawurlencode($file->name);
-        $file->deleteType = $this->options['delete_type'];
-        if ($file->deleteType !== 'DELETE') {
-            $file->deleteUrl .= '&_method=DELETE';
+		if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+            
+			try{
+				$sql = 'SELECT `id`, `uploaded_by` FROM `'
+					.$this->options['db_table'].'` WHERE `name`=:name';
+				$query = $this->db->prepare($sql);
+				$query->bindParam(':name', $file->name,PDO::PARAM_STR);
+				$query->execute();
+
+
+				while ($row = $query->fetch()) {
+					$file->id = $row['id'];
+					$file->uploaded_by = $row['uploaded_by'];
+				}
+			}
+			catch(PDOException $ex){ 
+				$file->error = "Problème avec la base de données: " . $ex->getMessage();
+				//die("Failed to connect to the database: " . $ex->getMessage());
+			}
         }
-        if ($this->options['access_control_allow_credentials']) {
-            $file->deleteWithCredentials = true;
-        }
-		*/
     }
 
     // Fix for overflowing signed 32 bit integers,
@@ -340,15 +370,8 @@ class UploadHandler
     }
 
     protected function get_file_objects($iteration_method = 'get_file_object') {
-		$upload_dir = $this->get_upload_path();
-        if (!is_dir($upload_dir)) {
-            return array();
-        }
-		
-		return array_values(array_filter(array_map(
-            array($this, $iteration_method),
-            scandir($upload_dir)
-        )));
+		// DO NOTHING
+		return array();
 
     }
 
@@ -1089,56 +1112,214 @@ class UploadHandler
     }
 
     protected function handle_file_upload($uploaded_file, $name, $size, $type, $error,
-            $index = null, $content_range = null) {
-        $file = new \stdClass();
-        $file->name = $this->get_file_name($uploaded_file, $name, $size, $type, $error,
-            $index, $content_range);
-        $file->size = $this->fix_integer_overflow((int)$size);
-        $file->type = $type;
-        if ($this->validate($uploaded_file, $file, $error, $index)) {
-            $this->handle_form_data($file, $index);
-            $upload_dir = $this->get_upload_path();
-            if (!is_dir($upload_dir)) {
-                mkdir($upload_dir, $this->options['mkdir_mode'], true);
-            }
-            $file_path = $this->get_upload_path($file->name);
-            $append_file = $content_range && is_file($file_path) &&
-                $file->size > $this->get_file_size($file_path);
-            if ($uploaded_file && is_uploaded_file($uploaded_file)) {
-                // multipart/formdata uploads (POST method uploads)
-                if ($append_file) {
-                    file_put_contents(
-                        $file_path,
-                        fopen($uploaded_file, 'r'),
-                        FILE_APPEND
-                    );
-                } else {
-                    move_uploaded_file($uploaded_file, $file_path);
-                }
-            } else {
-                // Non-multipart uploads (PUT method support)
-                file_put_contents(
-                    $file_path,
-                    fopen($this->options['input_stream'], 'r'),
-                    $append_file ? FILE_APPEND : 0
-                );
-            }
-            $file_size = $this->get_file_size($file_path, $append_file);
-            if ($file_size === $file->size) {
-                $file->url = $this->get_download_url($file->name);
-                if ($this->is_valid_image_file($file_path)) {
-                    $this->handle_image_file($file_path, $file);
-                }
-            } else {
-                $file->size = $file_size;
-                if (!$content_range && $this->options['discard_aborted_uploads']) {
-                    unlink($file_path);
-                    $file->error = $this->get_error_message('abort');
-                }
-            }
-            $this->set_additional_file_properties($file);
-        }
-        return $file;
+            
+		//$file = new CustomStdClass();
+		$file = new \stdClass();
+		
+		$file->name = $name;
+		$file->size = $this->fix_integer_overflow((int)$size);
+		$file->type = $type;
+		
+		if ($this->validate($uploaded_file, $file, $error, $index)) {
+						
+			$this->handle_form_data($file, $index);
+			$upload_dir = $this->get_upload_path();
+			
+			if (!is_dir($upload_dir)) {
+				mkdir($upload_dir, $this->options['mkdir_mode'], true);
+			}
+			
+			$file_path = $this->get_upload_path($file->name);
+			$append_file = $content_range && is_file($file_path) && $file->size > $this->get_file_size($file_path);
+			
+			if ($uploaded_file && is_uploaded_file($uploaded_file)) {
+				// multipart/formdata uploads (POST method uploads)
+				if ($append_file) {
+					file_put_contents(
+						$file_path,
+					   // fopen($uploaded_file, 'r'),
+						FILE_APPEND
+					);
+				} 
+				else 
+				{
+					if (!move_uploaded_file($uploaded_file, $file_path)){
+						// Si l'utilisateur apache n'a pas les droit ou FS plein sur le répertoire de dépôt
+						$file->error = $this->get_error_message('movetorepo');
+					}
+					
+				}
+			}	
+			else {
+				// Non-multipart uploads (PUT method support)
+				file_put_contents(
+					$file_path,
+					fopen('php://input', 'r'),
+					$append_file ? FILE_APPEND : 0
+				);
+			}
+		
+			// EXTRACT ZIP INFO
+			if (!extension_loaded('zip')) 
+			{ 
+				$file->error="L'extension zip pour php n'est pas installée!" ;
+				unlink ($file_path);
+			}
+			else{
+
+				$zip = new ZipArchive;		
+				$res = $zip->open($file_path);
+				if ($res === TRUE) 
+				{
+					/*if (!$zip->setPassword ( ZIP_PASSWORD )){
+						$file->error="Le mot de passe pour ouvrir l'archive n'est pas valide!" ;
+						unlink ($file_path);
+					}*/
+
+						$string = $zip->getArchiveComment();
+						$arr = explode(ZIPCOMMENT_SEPARATOR,$string);
+
+						$result = array();
+						foreach($arr as $value)
+						{
+							$val = explode(ZIPCOMMENT_SEPARATOR_PARAMVAL,$value);
+							$result[trim($val[0])] = trim($val[1]);
+						}
+									
+						$package="";
+						$autorun="";
+						$created="";
+						$project="";
+						$server="";
+						$user="";
+						$comment="";
+						
+						if (isset($result['Package'])){
+							$package=$result['Package'];
+						}
+						if (isset($result['AutoRun'])){
+							$autorun=$result['AutoRun'];
+						}
+						if (isset($result['Comment'])){
+							$comment=$result['Comment'];
+						}	
+						if (isset($result['Created'])){
+							$created=$result['Created'];
+							try{
+								$creationDate = new DateTime($created);
+							}
+							catch (Exception $e){
+								$creationDate=null;
+							}
+						}
+						if (isset($result['Project'])){
+							$project=$result['Project'];
+						}
+						if (isset($result['Server'])){
+							$server=$result['Server'];
+						}
+						if (isset($result['User'])){
+							$user=$result['User'];
+						}
+						/* Vérifier les champs obligatoires :
+							PACKAGE qui doit être présent et unique
+						*/
+						
+						if ($package==""){
+							$file->error="Impossible d'extraire l'ID du package depuis l'archive zip";
+							unlink($file_path);
+						}
+						else if (!isNewPackage($this->db,$package)){
+							$file->error='Impossible d\'importer plusieurs fois le même package ('.$package .')';
+							unlink($file_path);
+						}
+						$zip->close();
+					}
+				//} 
+				else 
+				{
+					$err = getZipStatus($res);
+					$file->error = 'Probleme avec le ZIP : ' .$err;
+					unlink($file_path);
+				}
+			}
+			/*
+			$file_size = $this->get_file_size($file_path, $append_file);
+			if ($file_size === $file->size) {
+			/* No need to set URL 
+				$file->url = $this->get_download_url($file->name);
+			*/
+			/* No need to handle image files 
+				if ($this->is_valid_image_file($file_path)) {
+					$this->handle_image_file($file_path, $file);
+				}
+			
+			} 
+			/*else {
+				$file->size = $file_size;
+				if (!$content_range && $this->options['discard_aborted_uploads']) {
+					unlink($file_path);
+					$file->error = $this->get_error_message('abort');
+				}
+			}
+			
+			$file->size = $file_size;	*/
+			
+			$this->set_additional_file_properties($file);
+		}		
+		
+		/*
+		*	Now Log to the DB 
+		*/
+
+		if (empty($file->error)) {
+			 try { 
+				$this->db->beginTransaction();
+				$sql = 'INSERT INTO `'.$this->options['db_table']
+                .'` (`name`, `size`, `uploaded_by`,`upload_date`,`type`,`package`,`autorun`,`created`,`project`,`server`,`user`,`comment`)'
+				.' VALUES (:name, :size, :uploaded_by, NOW(), :type, :package, :autorun, :created, :project, :server, :user, :comment )';
+				$query = $this->db->prepare($sql);
+				$query->bindParam(':name', $file->name, PDO::PARAM_STR);
+				$query->bindParam(':size', $file->size, PDO::PARAM_INT);
+				$query->bindParam(':uploaded_by', $file->uploaded_by, PDO::PARAM_INT);
+				$query->bindParam(':type', $file->type, PDO::PARAM_STR);
+				$query->bindParam(':package', $package, PDO::PARAM_STR);
+				$query->bindParam(':autorun', $autorun, PDO::PARAM_STR);
+				if ($creationDate==null){
+					$query->bindValue(':created', $creationDate, PDO::PARAM_INT);	
+				}
+				else{
+					$query->bindValue(':created', date_format($creationDate,'Y-m-d H:i:s'), PDO::PARAM_STR);
+				}
+				$query->bindParam(':project', $project, PDO::PARAM_STR);
+				$query->bindParam(':server', $server, PDO::PARAM_STR);
+				$query->bindParam(':user', $user, PDO::PARAM_STR);
+				$query->bindParam(':comment', $comment, PDO::PARAM_STR);
+				$query->execute();
+				$package_id =  $this->db->lastInsertId();
+				if ($package_id == 0){
+					$this->db->rollback();
+				}
+				else{
+					$file->info = MSG_UPLOAD_OK;
+					//error_log ("Just inserted a pck : " .$sql . " with id = " . $package_id);
+				
+					$sql = 'INSERT INTO `'.$this->options['db_history']
+					.'` (`package_id`, `state`, `substate`,`comment`,`date`)'
+					.' VALUES (:package_id, "UPLOAD", "OK", "'. MSG_UPLOAD_OK .'", NOW())';
+					$query = $this->db->prepare($sql);
+					$query->bindParam(':package_id', $package_id,PDO::PARAM_INT);
+					$query->execute();
+					$this->db->commit();
+				}
+			 }
+			catch(PDOException $ex){ 
+				$file->error = $ex->getMessage() . " \n SQL QUERY : " . $sql ;
+				//die("Failed to run query: " . $ex->getMessage()); 
+			} 
+        
+		}
+		return $file;
     }
 
     protected function readfile($file_path) {
@@ -1183,6 +1364,8 @@ class UploadHandler
 
     protected function handle_form_data($file, $index) {
         // Handle form data, e.g. $_POST['description'][$index]
+		$file->uploaded_by = @$_REQUEST['uploaded_by'][$index];
+		
     }
 
     protected function get_version_param() {
