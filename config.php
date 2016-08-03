@@ -9,7 +9,7 @@
 -------------------------------------------------------------------------------------------------*/
 
 	/* ini_set("display_errors", 1); doit être commenté en PRODUCTION */
-	ini_set("display_errors", 1);
+	//ini_set("display_errors", 1);
 	/* Variables de connexion à la base mySQL */
 		define("USERNAME","webuser");
 		define("PASSWORD","webuser");
@@ -24,7 +24,7 @@
 	/* Expression régulière pour filtrer les fichier à télécharger */
 		define("ACCEPT_FILE_TYPES","/.(zip)$/i");
 	/* Statut à écrire en base quand la phase d'upload est en succès */
-		define("MSG_UPLOAD_OK","Le package est bien téléchargé, en attente de contrôle");
+		define("MSG_UPLOAD_OK","Le package est chargé, en attente de contrôle");
 	/* Mot de passe pour lire les archives -- Pas nécessaire car on ne fait que lire les commentaires de l'archive*/
 		//define ("ZIP_PASSWORD","AutoRun");
 	/* Sépateur  entre deux parmètres dans la section commentaire des archives .zip */
@@ -179,7 +179,7 @@
 		}
 		else{
 			$query = '
-				SELECT l.id,l.name,l.type,l.size,l.content
+				SELECT l.id,l.name,l.type,l.size,l.content,p.package
 				FROM log_files l 
 					INNER JOIN packages_history h 
 						ON h.id = l.id_packages_history 
@@ -199,13 +199,44 @@
 	}
 	
 	/* ---------------------------------------------------------------------------------------
-		Vérifie que l'utilisateur en cours est bien authorisé à visualiser le pacjage specifié en paramètre 
+		Vérifie que l'utilisateur en cours est bien autorisé à visualiser le package specifié en paramètre 
 		Retourne TRUE si le package existe et qu'il a été chargé par l'utilisateur en cours
 		Retourne FALSE sinon
 	---------------------------------------------------------------------------------------- */	
 	function isUserAllowedToViewPackage($mydb,$pack){
 
 		$query = 'SELECT uploaded_by FROM packages WHERE package="'.$pack.'"';
+		  try {  
+			$stmt = $mydb->prepare($query); 
+            $result = $stmt->execute(); 
+        } 
+        catch(PDOException $ex){ die("Failed to run query: " . $ex->getMessage()); } 
+
+		if ($stmt->rowCount()!=1)
+		{
+			return false;
+		}
+		else 
+		{
+			$res = $stmt->fetch();
+			if ($res['uploaded_by'] == $_SESSION['user']['id']){
+				return true;	
+			}
+			else {
+				return false;
+			}
+		}
+	}
+	/* ---------------------------------------------------------------------------------------
+		Vérifie que l'utilisateur en cours est bien autorisé à visualiser le fichier specifié en paramètre 
+		Retourne TRUE si le fichier existe et qu'il est lié à un package chargé par l'utilisateur en cours
+		Retourne FALSE sinon
+	---------------------------------------------------------------------------------------- */	
+	function isUserAllowedToViewFile($mydb,$fileid){
+	$query = 'SELECT uploaded_by FROM packages p 
+			INNER JOIN packages_history h ON h.package = p.package
+			INNER JOIN log_files l ON l.id_packages_history = h.id
+			WHERE l.id="'.$fileid.'"';
 		  try {  
 			$stmt = $mydb->prepare($query); 
             $result = $stmt->execute(); 

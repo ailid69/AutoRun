@@ -609,151 +609,152 @@ class UploadHandler
 					$append_file ? FILE_APPEND : 0
 				);
 			}
-		
-			// EXTRACT ZIP INFO
-			if (!extension_loaded('zip')) 
-			{ 
-				$file->error="L'extension zip pour php n'est pas installée!" ;
-				unlink ($file_path);
-			}
-			else{
+			if (empty($file->error)){
+				// EXTRACT ZIP INFO
+				if (!extension_loaded('zip')) 
+				{ 
+					$file->error="L'extension zip pour php n'est pas installée!" ;
+					unlink ($file_path);
+				}
+				else {
 
-				$zip = new ZipArchive;		
-				$res = $zip->open($file_path);
-				if ($res === TRUE) 
-				{
-						$string = $zip->getArchiveComment();
-						$arr = explode(ZIPCOMMENT_SEPARATOR,$string);
+					$zip = new ZipArchive;		
+					$res = $zip->open($file_path);
+					if ($res === TRUE) 
+					{
+							$string = $zip->getArchiveComment();
+							$arr = explode(ZIPCOMMENT_SEPARATOR,$string);
 
-						$result = array();
-						foreach($arr as $value)
-						{
-							$val = explode(ZIPCOMMENT_SEPARATOR_PARAMVAL,$value);
-							if (!empty($val) && !empty($val[0]) && !empty($val[1])){
-								$result[trim($val[0])] = trim($val[1]);
+							$result = array();
+							foreach($arr as $value)
+							{
+								$val = explode(ZIPCOMMENT_SEPARATOR_PARAMVAL,$value);
+								if (!empty($val) && !empty($val[0]) && !empty($val[1])){
+									$result[trim($val[0])] = trim($val[1]);
+								}
 							}
-						}
-									
-						$package="";
-						$autorun="";
-						$created="";
-						$project="";
-						$server="";
-						$user="";
-						$comment="";
-									
-						if (isset($result['Package'])){
-							$package=$result['Package'];
-						}
-						if (isset($result['AutoRun'])){
-							$autorun=$result['AutoRun'];
-						}
-						if (isset($result['Comment'])){
-							$comment=$result['Comment'];
-						}	
-						if (isset($result['Created'])){
-							$created=$result['Created'];
-							try{
-								$creationDate = new DateTime($created);
+										
+							$package="";
+							$autorun="";
+							$created="";
+							$project="";
+							$server="";
+							$user="";
+							$comment="";
+										
+							if (isset($result['Package'])){
+								$package=$result['Package'];
 							}
-							catch (Exception $e){
-								$creationDate=null;
+							if (isset($result['AutoRun'])){
+								$autorun=$result['AutoRun'];
 							}
+							if (isset($result['Comment'])){
+								$comment=$result['Comment'];
+							}	
+							if (isset($result['Created'])){
+								$created=$result['Created'];
+								try{
+									$creationDate = new DateTime($created);
+								}
+								catch (Exception $e){
+									$creationDate=null;
+								}
+							}
+							if (isset($result['Project'])){
+								$project=$result['Project'];
+							}
+							if (isset($result['Server'])){
+								$server=$result['Server'];
+							}
+							if (isset($result['User'])){
+								$user=$result['User'];
+							}
+							/* Vérifier les champs obligatoires :
+								PACKAGE qui doit être présent et unique
+							*/
+							
+							if ($package==""){
+								$file->error="Impossible d'extraire l'ID du package depuis l'archive zip";
+								unlink($file_path);
+							}
+							/* Le nom du fichier doit correspondre au nom du package */
+							else if (strcasecmp($package.'.zip', $file->name) != 0) {
+								$file->error='Le nom du fichier ('. $file->name . ') doit correspondre au nom du package ('.$package .')';
+								unlink($file_path);
+							}
+							else if (!isNewPackage($this->db,$package)){
+								$file->error='Impossible d\'importer plusieurs fois le même package ('.$package .')';
+								unlink($file_path);
+							}
+							
+							$zip->close();
 						}
-						if (isset($result['Project'])){
-							$project=$result['Project'];
-						}
-						if (isset($result['Server'])){
-							$server=$result['Server'];
-						}
-						if (isset($result['User'])){
-							$user=$result['User'];
-						}
-						/* Vérifier les champs obligatoires :
-							PACKAGE qui doit être présent et unique
-						*/
-						
-						if ($package==""){
-							$file->error="Impossible d'extraire l'ID du package depuis l'archive zip";
-							unlink($file_path);
-						}
-						/* Le nom du fichier doit correspondre au nom du package */
-						else if (strcasecmp($package.'.zip', $file->name) != 0) {
-							$file->error='Le nom du fichier ('. $file->name . ') doit correspondre au nom du package ('.$package .')';
-							unlink($file_path);
-						}
-						else if (!isNewPackage($this->db,$package)){
-							$file->error='Impossible d\'importer plusieurs fois le même package ('.$package .')';
-							unlink($file_path);
-						}
-						
-						$zip->close();
+
+					else 
+					{
+						$err = getZipStatus($res);
+						$file->error = 'Probleme avec le ZIP : ' .$err;
+						unlink($file_path);
 					}
+				}
+				
+				$this->set_additional_file_properties($file);
+					
+			
+			/*
+			*	Now Log to the DB 
+			*/
 
-				else 
-				{
-					$err = getZipStatus($res);
-					$file->error = 'Probleme avec le ZIP : ' .$err;
-					unlink($file_path);
+				if (empty($file->error)) {
+					 try { 
+						$this->db->beginTransaction();
+						$sql = 'INSERT INTO `'.$this->options['db_table']
+						.'` (`name`, `size`, `uploaded_by`,`upload_date`,`type`,`package`,`autorun`,`created`,`project`,`server`,`user`,`comment`)'
+						.' VALUES (:name, :size, :uploaded_by, NOW(), :type, :package, :autorun, :created, :project, :server, :user, :comment )';
+						$query = $this->db->prepare($sql);
+						$query->bindParam(':name', $file->name, PDO::PARAM_STR);
+						$query->bindParam(':size', $file->size, PDO::PARAM_INT);
+						$query->bindParam(':uploaded_by', $file->uploaded_by, PDO::PARAM_INT);
+						$query->bindParam(':type', $file->type, PDO::PARAM_STR);
+						$query->bindParam(':package', $package, PDO::PARAM_STR);
+						$query->bindParam(':autorun', $autorun, PDO::PARAM_STR);
+						if ($creationDate==null){
+							$query->bindValue(':created', $creationDate, PDO::PARAM_INT);	
+						}
+						else{
+							$query->bindValue(':created', date_format($creationDate,'Y-m-d H:i:s'), PDO::PARAM_STR);
+						}
+						$query->bindParam(':project', $project, PDO::PARAM_STR);
+						$query->bindParam(':server', $server, PDO::PARAM_STR);
+						$query->bindParam(':user', $user, PDO::PARAM_STR);
+						$query->bindParam(':comment', $comment, PDO::PARAM_STR);
+						$query->execute();
+						/*$package_id =  $this->db->lastInsertId();
+						if ($package_id == 0){
+							$this->db->rollback();
+						}
+						else{
+						*/
+							$sql = 'INSERT INTO `'.$this->options['db_history']
+							.'` (`package`, `state`, `substate`,`comment`,`date`)'
+							.' VALUES (:package, "UPLOAD", "OK", "'. MSG_UPLOAD_OK .'", NOW())';
+							$query = $this->db->prepare($sql);
+							$query->bindParam(':package', $package,PDO::PARAM_STR);
+							$query->execute();
+							$this->db->commit();
+							
+							$file->info = MSG_UPLOAD_OK;
+							$file->package = $package;
+							$file->server = $server;
+							$file->user = $user;
+						//}
+					 }
+					catch(PDOException $ex){ 
+						$file->error = $ex->getMessage() . " \n SQL QUERY : " . $sql ;
+						//die("Failed to run query: " . $ex->getMessage()); 
+					} 	
 				}
 			}
-			
-			$this->set_additional_file_properties($file);
-		}		
-		
-		/*
-		*	Now Log to the DB 
-		*/
-
-		if (empty($file->error)) {
-			 try { 
-				$this->db->beginTransaction();
-				$sql = 'INSERT INTO `'.$this->options['db_table']
-                .'` (`name`, `size`, `uploaded_by`,`upload_date`,`type`,`package`,`autorun`,`created`,`project`,`server`,`user`,`comment`)'
-				.' VALUES (:name, :size, :uploaded_by, NOW(), :type, :package, :autorun, :created, :project, :server, :user, :comment )';
-				$query = $this->db->prepare($sql);
-				$query->bindParam(':name', $file->name, PDO::PARAM_STR);
-				$query->bindParam(':size', $file->size, PDO::PARAM_INT);
-				$query->bindParam(':uploaded_by', $file->uploaded_by, PDO::PARAM_INT);
-				$query->bindParam(':type', $file->type, PDO::PARAM_STR);
-				$query->bindParam(':package', $package, PDO::PARAM_STR);
-				$query->bindParam(':autorun', $autorun, PDO::PARAM_STR);
-				if ($creationDate==null){
-					$query->bindValue(':created', $creationDate, PDO::PARAM_INT);	
-				}
-				else{
-					$query->bindValue(':created', date_format($creationDate,'Y-m-d H:i:s'), PDO::PARAM_STR);
-				}
-				$query->bindParam(':project', $project, PDO::PARAM_STR);
-				$query->bindParam(':server', $server, PDO::PARAM_STR);
-				$query->bindParam(':user', $user, PDO::PARAM_STR);
-				$query->bindParam(':comment', $comment, PDO::PARAM_STR);
-				$query->execute();
-				/*$package_id =  $this->db->lastInsertId();
-				if ($package_id == 0){
-					$this->db->rollback();
-				}
-				else{
-				*/
-					$sql = 'INSERT INTO `'.$this->options['db_history']
-					.'` (`package`, `state`, `substate`,`comment`,`date`)'
-					.' VALUES (:package, "UPLOAD", "OK", "'. MSG_UPLOAD_OK .'", NOW())';
-					$query = $this->db->prepare($sql);
-					$query->bindParam(':package', $package,PDO::PARAM_STR);
-					$query->execute();
-					$this->db->commit();
-					
-					$file->info = MSG_UPLOAD_OK;
-					$file->package = $package;
-					$file->server = $server;
-					$file->user = $user;
-				//}
-			 }
-			catch(PDOException $ex){ 
-				$file->error = $ex->getMessage() . " \n SQL QUERY : " . $sql ;
-				//die("Failed to run query: " . $ex->getMessage()); 
-			} 
-        
 		}
 		return $file;
     }

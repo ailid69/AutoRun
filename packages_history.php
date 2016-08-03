@@ -41,6 +41,11 @@
 		$package = get_package_detail($db,$packid);
 		$history = get_package_history($db,$packid);	
 		
+		if (empty($package)){
+			header("Location: index.php?msg=2");
+			die("Redirecting to index.php");
+		}
+		
 		/*-------------------------------------------------------------------------------------------------
 			Gestion des données envoyés en POST 
 			Il s'agit de l'ajout ou de la suppression de fichier de log
@@ -87,31 +92,40 @@
 			$tmpName  = $_FILES['userfile_'.$id_packages_history]['tmp_name'];
 			$fileSize = $_FILES['userfile_'.$id_packages_history]['size'];
 			$fileType = $_FILES['userfile_'.$id_packages_history]['type'];
-
-			$fp      = fopen($tmpName, 'r');
-			$content = fread($fp, filesize($tmpName));
-			$content = addslashes($content);
-			fclose($fp);
-
-			if(!get_magic_quotes_gpc())
-			{
-				$fileName = addslashes($fileName);
-			}
+			
 			/*-------------------------------------------------------------------------------------------------
-				Requête pour insérer le fichier en base
+				Uniquement le type de fichier text/plain est autorisé
 			-------------------------------------------------------------------------------------------------*/
-			$query = "INSERT INTO log_files (name, size, type, content,id_packages_history ) ".
-			"VALUES ('$fileName', '$fileSize', '$fileType', '$content', '$id_packages_history')";
+			/*if ($fileType!="text/plain"){
+				$errmsg = 'Le fichier <strong>' . $fileName . ' </strong> n\'est pas un fichier de log.<BR>
+				Le type de fichier doit être <strong>text/plain</strong>, vous avez essayé de charger un fichier de type <strong>' .$fileType .'</strong>';
+			}*/
+			//else{
+				$fp      = fopen($tmpName, 'r');
+				$content = fread($fp, filesize($tmpName));
+				$content = addslashes($content);
+				fclose($fp);
 
-			try {  
-				$stmt = $db->prepare($query); 
-				$result = $stmt->execute();
-				$msg = 'Le fichier de log <strong>' . $fileName . ' </strong> a bien été inséré.';
-					
-				} 
-			catch(PDOException $ex){ 
-				$errmsg = 'Il y a eu un problême avec l\'insertion du fichier de log <strong>' . $fileName .'</strong>';
-			} 
+				if(!get_magic_quotes_gpc())
+				{
+					$fileName = addslashes($fileName);
+				}
+				/*-------------------------------------------------------------------------------------------------
+					Requête pour insérer le fichier en base
+				-------------------------------------------------------------------------------------------------*/
+				$query = "INSERT INTO log_files (name, size, type, content,id_packages_history ) ".
+				"VALUES ('$fileName', '$fileSize', '$fileType', '$content', '$id_packages_history')";
+
+				try {  
+					$stmt = $db->prepare($query); 
+					$result = $stmt->execute();
+					$msg = 'Le fichier de log <strong>' . $fileName . ' </strong> a bien été inséré.';
+						
+					} 
+				catch(PDOException $ex){ 
+					$errmsg = 'Il y a eu un problême avec l\'insertion du fichier de log <strong>' . $fileName .'</strong>';
+				}
+			//}				
 		}
 		else if ($delete == true){
 			/*-------------------------------------------------------------------------------------------------
@@ -284,26 +298,35 @@
 		';
 		
 		$result = get_logFiles($db,$row['id']);
-		echo '<td>';
+		echo '<td><span style="font-size:13px;>';
 		foreach($result as $file){
-			echo 	'<div class="row">' ;
-				echo	'<span style="font-size:12px;"> 
-							<div class="col-md-8">
-								<a href="download.php?id='.$file['id'].'">'. $file['name'] .'</a>
-							</div>
-							<!--div class="col-md-5">'. $file['type'] .'</div>
-							<div class="col-md-2">'. $file['size'] .'</div-->
-						</span>';
-				if($_SESSION['user']['isadmin']==1){
-					echo'
+			echo '	
+					<div class="row" style="text-align:left">
+
+					<strong>'. $file['name'] . '</strong> | '.$file['type'] .' | '. sizetohumanreadable($file['size']) .'
+
+					</div>
+					<div class="row">
+						<div class="col-md-4">
+							<a href="viewfile.php?fileid='.$file['id'] . '" class="btn btn-info btn-xs">Visualiser</a>
+						</div>
+						<div class="col-md-4">
+							<a href="download.php?id='.$file['id'].'" class="btn btn-info btn-xs">Télécharger</a>
+						</div>
+			
+				';
+			if($_SESSION['user']['isadmin']==1){
+				echo'
 						<div class="col-md-4">
 							<input type="submit" class="btn btn-info btn-xs" name="delete_'.$file['id'].'" value="Supprimer" id="delete_'.$file['id'].'"></input>
 						</div>	
-					</div>
 					';
-				}
+			}
+			echo'
+					</div>
+			';
 		}
-		echo '</td>';
+		echo '</td></span>';
 		if($_SESSION['user']['isadmin']==1){	
 			echo '
 			<td>	
@@ -324,6 +347,11 @@
 	</table>
 </div>
 </div>
+
+
+</div>
+<div class="panel-footer">
+	<a href="packages.php" class="btn btn-info btn-lg" role="button">Gestion des packages</a>
 </div>
 </div>
 </form>
@@ -332,6 +360,7 @@
 $(document).ready(function(){
     $('[data-toggle="tooltip"]').tooltip(); 
 });
+
 </script>
 
 </body>

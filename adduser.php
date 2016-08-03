@@ -150,13 +150,22 @@
 			</div>
 		</div>
 	</div>
-	
+	<!--
 	<div class="row">
 		<div class="form-group col-md-6">
 			<button type="submit" class="btn btn-primary">Valider</button>
+		</div>		
+		<div class="form-group col-md-6">
+			<a href="users.php" class="btn btn-info btn-lg" role="button">Retour à la Gestion des utilisateurs</a>
 		</div>
 	</div>
+	-->
 
+			<button type="submit" class="btn btn-info">Valider</button>
+			<a href="users.php" class="btn btn-info" role="button">Retour à la Gestion des utilisateurs</a>
+
+	
+	
 </form>
 </div>
 </div>

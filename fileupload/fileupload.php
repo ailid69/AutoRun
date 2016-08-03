@@ -42,7 +42,7 @@
 	<div class="panel panel-default">
 		<div class="panel-heading">
 			<p><h2>Chargement de packages</h2></p>
-		</div>
+		</div> 
 		<div class="panel-body">
 	
 			<form id="fileupload" action="/php/fileupload/server/php/index.php" method="POST" enctype="multipart/form-data">
@@ -91,7 +91,9 @@
     </form>
 	</div>
 </div>
-	
+		<div class="panel-footer">
+			<a href="/packages.php" class="btn btn-info btn-lg">Gestion des packages</a>
+		</div>
 <!-- 
 Template pouyr l'affichage des fichiers disponibles en chargement 
 -->
@@ -190,7 +192,9 @@ Template pour l'affichage des fichiers chargées
 <!-- Bootstrap JS is not required, but included for the responsive demo navigation -->
 <!--script src="//netdna.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 <!-- blueimp Gallery script -->
-<!--script src="jquery.blueimp-gallery.min.js"></script>
+<!--
+<script src="jquery.blueimp-gallery.min.js"></script>
+-->
 <!-- The Iframe Transport is required for browsers without support for XHR file uploads -->
 
  <!--script src="/js/jquery.min.js"></script-->
