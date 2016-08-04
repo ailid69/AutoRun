@@ -265,9 +265,9 @@
 		<strong>
 			<div class = "col-md-1">Phase</div>
 			<div class = "col-md-1">Statut</div>
-			<div class = "col-md-3">Commentaires</div>
+			<div class = "col-md-4">Commentaires</div>
 			<div class = "col-md-2">Date</div>
-			<div class = "col-md-4">Log</div>
+			<div class = "col-md-3">Log</div>
 			<div class = "col-md-1"></div>
 		</strong>
 	 </div>
@@ -291,13 +291,13 @@
 		<div class = "row" style=margin-top:10px>
 			<div class = "col-md-1"><span class="label '. $mylabel .'">' . $row['state'] .'</span></div> 
 			<div class = "col-md-1"><span class="label '. $mysublabel .'">' . $row['substate'] .'</span></div>
-			<div class = "col-md-3">' . $row['comment'] . '</div>
+			<div class = "col-md-4">' . $row['comment'] . '</div>
 			<div class = "col-md-2">' . $row['date'] . '</div>
 		';
 		
 		$result = get_logFiles($db,$row['id']);
 		echo '
-			<div class= "col-md-4"><span style="font-size:12px;">';
+			<div class= "col-md-3"><span style="font-size:12px;">';
 		foreach($result as $file){
 			echo '	
 					<div class="row">
