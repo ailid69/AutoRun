@@ -260,21 +260,19 @@
 			<p><h3>Historique </h3></p>
 		</div>
 		<div class="panel-body">
-	 <table id="history" class="table" cellspacing="0" width="100%">
-    
-	<thead> 
-		<tr> 
-			<th>Phase</th>
-			<th>Statut</th>
-			<th>Commentaires</th>
-			<th>Date</th>
-			<th>Fichier(s) de log</th> 
-			<th></th>
-		</tr> 
-	</thead> 
-	<tbody> 
-	
-	<?php 
+	 <!-- USING BOOTSTRAP INSTEAD OF TABLE -->
+	 <div class = "row">
+		<strong>
+			<div class = "col-md-1">Phase</div>
+			<div class = "col-md-1">Statut</div>
+			<div class = "col-md-3">Commentaires</div>
+			<div class = "col-md-2">Date</div>
+			<div class = "col-md-4">Log</div>
+			<div class = "col-md-1"></div>
+		</strong>
+	 </div>
+	 
+	 <?php 
 	 foreach ($history as $row){
 		 switch ($row['substate']){
 				case "OK": $mysublabel = "label label-success";break;
@@ -290,21 +288,22 @@
 				default : 	$mylabel = "label label-danger";break;
 		   }
 		 echo '
-		<tr>
-			<td><span class="label '. $mylabel .'">' . $row['state'] .'</span></td> 
-			<td> <span class="label '. $mysublabel .'">' . $row['substate'] .'</span></td>
-			<td>' . $row['comment'] . '</td>
-			<td>' . $row['date'] . '</td>
+		<div class = "row" style=margin-top:10px>
+			<div class = "col-md-1"><span class="label '. $mylabel .'">' . $row['state'] .'</span></div> 
+			<div class = "col-md-1"><span class="label '. $mysublabel .'">' . $row['substate'] .'</span></div>
+			<div class = "col-md-3">' . $row['comment'] . '</div>
+			<div class = "col-md-2">' . $row['date'] . '</div>
 		';
 		
 		$result = get_logFiles($db,$row['id']);
-		echo '<td><span style="font-size:13px;>';
+		echo '
+			<div class= "col-md-4"><span style="font-size:12px;">';
 		foreach($result as $file){
 			echo '	
-					<div class="row" style="text-align:left">
-
-					<strong>'. $file['name'] . '</strong> | '.$file['type'] .' | '. sizetohumanreadable($file['size']) .'
-
+					<div class="row">
+						<div class= "col-md-12">
+							<strong>'. $file['name'] . '</strong> | '.$file['type'] .' | '. sizetohumanreadable($file['size']) .'
+						</div>
 					</div>
 					<div class="row">
 						<div class="col-md-4">
@@ -319,40 +318,48 @@
 				echo'
 						<div class="col-md-4">
 							<input type="submit" class="btn btn-info btn-xs" name="delete_'.$file['id'].'" value="Supprimer" id="delete_'.$file['id'].'"></input>
-						</div>	
+						</div>
 					';
 			}
 			echo'
 					</div>
 			';
 		}
-		echo '</td></span>';
-		if($_SESSION['user']['isadmin']==1){	
+		echo '</span></div>';
 			echo '
-			<td>	
-					
-							 <!-- The fileinput-button span is used to style the file input field as button -->
+			<div class="col-md-1">
+				<div class="row">	
+					<div class="col-md-12">	
+					';
+					if($_SESSION['user']['isadmin']==1){	
+							echo'
+							<!-- The fileinput-button span is used to style the file input field as button -->
 							<span class="btn btn-info btn-xs fileinput-button">
-								<input type="file" name="userfile_'.$row['id'].'" onchange="this.form.submit()">Charger un fichier de log </input>		
+								<input type="file" name="userfile_'.$row['id'].'" onchange="this.form.submit()">Charger</input>		
 								<input type="hidden" name="MAX_FILE_SIZE" value="16777216"></input>
 							</span>
-					
-			</td>
-		</tr>
-		';
-		}
+							';
+					}
+		echo '
+					</div>
+				</div>
+			</div>
+		</div>';
 	 }
+
 	 ?>
-	</tbody>
-	</table>
+	 
+	 
+	 <!-- USING BOOTSTRAP INSTEAD OF TABLE -->
+</div>	 
 </div>
 </div>
 
 
-</div>
 <div class="panel-footer">
 	<a href="packages.php" class="btn btn-info btn-lg" role="button">Gestion des packages</a>
 </div>
+
 </div>
 </form>
 

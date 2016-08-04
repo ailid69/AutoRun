@@ -171,14 +171,18 @@
 			$stmt = $mydb->prepare($query); 
             $result = $stmt->execute(); 
         } 
-        catch(PDOException $ex){ die("Failed to run query: " . $ex->getMessage()); } 
-		if ($stmt->rowCount()!=1) {die;}
-		$isadmin = $result[0]['isadmin'];
-		if ($isadmin == 1){
-			$query = 'SELECT l.id,l.name,l.type,l.size,l.content FROM log_files l WHERE id = "' . $fileid . '"';
+        catch(PDOException $ex){ 
+			die("Failed to run query: " . $ex->getMessage()); 
+		} 
+		if ($stmt->rowCount()!=1) {
+			die;
 		}
 		else{
-			$query = '
+			$res = $stmt->fetch();
+			$isadmin=$res['isadmin'];
+		}
+		
+		$query = '
 				SELECT l.id,l.name,l.type,l.size,l.content,p.package
 				FROM log_files l 
 					INNER JOIN packages_history h 
@@ -187,14 +191,19 @@
 						ON p.package = h.package
 					INNER JOIN users u 
 						ON u.id = p.uploaded_by
-				WHERE l.id = "' . $fileid . '" AND u.id = "'.$myuser.'"
-				';			
+				WHERE l.id = "' . $fileid .'"
+				';	
+		
+		if ($isadmin != 1){
+			$query = $query . ' AND u.id = "'.$myuser.'"';
 		}
-		  try {  
+		try {  
 			$stmt = $mydb->prepare($query); 
             $result = $stmt->execute(); 
         } 
-        catch(PDOException $ex){ die("Failed to run query: " . $ex->getMessage()); } 
+        catch(PDOException $ex){ 
+			die("Failed to run query: " . $ex->getMessage()); 
+		} 
 		return $stmt->fetch();
 	}
 	
