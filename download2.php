@@ -31,8 +31,8 @@
 			die;
 		}
 		
-		 //header('Content-length: ' . $result['size']);
-		 //header('Content-type: ' . $result['type']);
+		 header('Content-length: ' . $result['size']);
+		 header('Content-type: ' . $result['type']);
 		 header('Content-Disposition: attachment; filename='. $result['name']);
 		 ob_clean();
 		 flush();

@@ -74,18 +74,19 @@
 	   $result = show_last_status_by_package($db,$_SESSION['user']['id'],$_SESSION['user']['isadmin']);
 	   
 	   foreach ($result as $row){
-		   switch ($row['substate']){
-				case "OK": $mysublabel = "label label-success";break;
-				case "ERROR" : $mysublabel = "label label-danger";break;
-				default : 	$mysublabel = "label label-default";break;
-		 	}
-			 switch ($row['state']){
-				case "UPLOAD": $mylabel = "label label-warning";break;
-				case "CONTROL" : $mylabel = "label label-primary";break;
-				case "HANDLE" : $mylabel = "label label-info";break;
-				case "IMPORT" : $mylabel = "label label-default";break;
-				case "EXECUTE" : $mylabel = "label label-success";break;
-				default : 	$mylabel = "label label-danger";break;
+		  switch ($row['substate']){
+                                case "OK": $mysublabel = "label label-success";break;
+                                case "KO": $mysublabel = "label label-warning";break;
+                                case "ERROR" : $mysublabel = "label label-danger";break;
+                                default :       $mysublabel = "label label-default";break;
+                        }
+                         switch ($row['state']){
+                                case "UPLOAD": $mylabel = "label label-warning";break;
+                                case "CONTROL" : $mylabel = "label label-primary";break;
+                                case "HANDLE" : $mylabel = "label label-info";break;
+                                case "WAITING" : $mylabel = "label label-default";break;
+                                case "EXECUTE" : $mylabel = "label label-success";break;
+                                default :       $mylabel = "label label-danger";break;
 		   }
 		echo '
 		<tr> <th data-html="true" data-container="body" data-toggle="tooltip2" title="Taille : '.sizetohumanreadable($row['size']) .'<BR>Généré à partir de : '.$row['autorun'].'">' . $row['package'] . ' </th> 
